@@ -3,6 +3,9 @@ import Topbar from './Topbar'
 import Sidebar from './Sidebar'
 import BottomNavigation from './BottomNavigation'
 import Breadcrumb from '../ui/Breadcrumb/Breadcrumb'
+import { PWAUpdatePrompt } from '../ui/PWAUpdatePrompt'
+import { PWAInstallPrompt } from '../ui/PWAInstallPrompt'
+import { OfflineIndicator } from '../ui/OfflineIndicator'
 
 interface LayoutProps {
   children: ReactNode
@@ -40,6 +43,15 @@ const Layout = ({ children }: LayoutProps) => {
       {/* <div className="block"> */}
         <BottomNavigation />
       </div>
+      
+      {/* PWA Update Prompt */}
+      <PWAUpdatePrompt />
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
+      
+      {/* Offline Indicator */}
+      <OfflineIndicator />
     </div>
   )
 }
