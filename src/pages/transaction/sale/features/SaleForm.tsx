@@ -1,18 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Plus, Info, ShoppingCart, X } from 'lucide-react';
+import { Save, Plus, ShoppingCart } from 'lucide-react';
 import Button from '../../../../components/ui/Button/Button';
 import Input from '../../../../components/ui/Input/Input';
-import Select from '../../../../components/ui/Select/Select';
-import Stepper from '../../../../components/ui/Stepper/Stepper';
-import Tooltip from '../../../../components/ui/Tooltip/Tooltip';
 import Alert from '../../../../components/ui/Alert/Alert';
 import { t } from '../../../../utils/i18n';
 import ConfirmSaleModal from './ConfirmSaleModal';
+import CartTable from './CartTable';
 import {
   SaleItem,
   ProductOption,
-  Option,
   useSaleForm,
   useProductOptions,
   useCategoryOptions,
@@ -21,236 +18,7 @@ import {
   useProductConversions
 } from './useSale';
 
-interface CartItemProps {
-  item: SaleItem;
-  productOptions: ProductOption[];
-  onUpdateItem: (index: number, item: SaleItem) => void;
-  onRemoveItem: (index: number) => void;
-  onFetchConversions: (productId: number) => Promise<any[]>;
-  index: number;
-}
 
-// Cart Item Component
-function CartItem({
-  item,
-  productOptions,
-  onUpdateItem,
-  onRemoveItem,
-  onFetchConversions,
-  index
-}: CartItemProps) {
-  const selectedProduct = productOptions.find(p => p.product_id === item.product_id);
-  const [conversions, setConversions] = useState<any[]>([]);
-  const [loadingConversions, setLoadingConversions] = useState(false);
-  const conversionsLoadedRef = useRef(false);
-  
-  // Load conversions only when needed
-  const loadConversions = useCallback(async () => {
-    if (!item.product_id || conversionsLoadedRef.current) return; // Don't reload if already loaded
-    
-    setLoadingConversions(true);
-    try {
-      const productConversions = await onFetchConversions(item.product_id);
-      if (productConversions && productConversions.length > 0) {
-        setConversions(productConversions);
-        conversionsLoadedRef.current = true;
-      } else {
-        console.warn(`No conversions found for product ${item.product_id}`);
-        setConversions([]);
-        conversionsLoadedRef.current = true;
-      }
-    } catch (error) {
-      console.error('Error loading conversions:', error);
-      setConversions([]);
-      conversionsLoadedRef.current = true;
-    } finally {
-      setLoadingConversions(false);
-    }
-  }, [item.product_id, onFetchConversions]);
-  
-  // Load conversions on mount only
-  useEffect(() => {
-    if (item.product_id && !conversionsLoadedRef.current) {
-      loadConversions();
-    }
-  }, [item.product_id, loadConversions]);
-  
-  // Get unit options for this product from conversions
-  const unitOptions = useMemo(() => {
-    if (conversions && conversions.length > 0) {
-      return conversions.map((conversion: any) => ({
-        id: conversion.to_unit_id,
-        name: conversion.to_unit
-      }));
-    }
-    
-    // Fallback: if no conversions loaded but we have unit info, create a fallback option
-    if (item.unit_id && item.unit_name) {
-      return [{
-        id: item.unit_id,
-        name: item.unit_name
-      }];
-    }
-    
-    return [];
-  }, [conversions, item.unit_id, item.unit_name]);
-
-  // Get conversion info for current unit
-  const conversionInfo = useMemo(() => {
-    if (!item.unit_id || !conversions) return null;
-    return conversions.find((conv: any) => conv.to_unit_id === item.unit_id);
-  }, [item.unit_id, conversions]);
-
-  // Ensure we have a valid unit_id, if not, set it to the first available unit
-  useEffect(() => {
-    if (conversions.length > 0 && !item.unit_id) {
-      const firstUnit = conversions[0];
-      onUpdateItem(index, {
-        ...item,
-        unit_id: firstUnit.to_unit_id,
-        unit_name: firstUnit.to_unit,
-        price: firstUnit.price,
-        subtotal: firstUnit.price * item.qty
-      });
-    }
-  }, [conversions.length, item.unit_id]); // Simplified dependencies
-
-  // Validate that current unit_id is still valid
-  useEffect(() => {
-    if (conversions.length > 0 && item.unit_id) {
-      const isValidUnit = conversions.some((conv: any) => conv.to_unit_id === item.unit_id);
-      if (!isValidUnit) {
-        // Current unit is no longer valid, set to first available unit
-        const firstUnit = conversions[0];
-        onUpdateItem(index, {
-          ...item,
-          unit_id: firstUnit.to_unit_id,
-          unit_name: firstUnit.to_unit,
-          price: firstUnit.price,
-          subtotal: firstUnit.price * item.qty
-        });
-      }
-    }
-  }, [conversions.length, item.unit_id]); // Simplified dependencies
-
-  const handleUnitChange = async (unit: Option | null) => {
-    if (!unit) return;
-    
-    // If conversions not loaded yet, load them first
-    if (!conversionsLoadedRef.current) {
-      await loadConversions();
-    }
-    
-    // Use local conversions state
-    const newConversion = conversions.find((conv: any) => conv.to_unit_id === unit.id);
-    let newPrice = 0;
-    
-    if (newConversion) {
-      newPrice = newConversion.price;
-    } else {
-      // If no conversion found, try to find a default conversion or use a reasonable fallback
-      const defaultConversion = conversions.find((conv: any) => conv.is_default);
-      if (defaultConversion) {
-        newPrice = defaultConversion.price;
-      } else if (conversions.length > 0) {
-        // Use the first available conversion as fallback
-        newPrice = conversions[0].price;
-      }
-    }
-    
-    // Update the item with new unit and price, ensuring quantity is at least 1
-    const validQty = Math.max(1, item.qty);
-    onUpdateItem(index, {
-      ...item,
-      unit_id: unit.id,
-      unit_name: unit.name,
-      price: newPrice,
-      qty: validQty,
-      subtotal: newPrice * validQty
-    });
-  };
-
-  const handleQtyChange = (qty: number) => {
-    // Ensure quantity is at least 1
-    const validQty = Math.max(1, qty);
-    onUpdateItem(index, {
-      ...item,
-      qty: validQty,
-      subtotal: item.price * validQty
-    });
-  };
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3 mb-2 shadow-sm">
-      {/* Header with product name and close button */}
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <h4 className="font-medium text-gray-900">
-            {selectedProduct?.product_name || 'Unknown Product'}
-          </h4>
-        </div>
-        <button
-          onClick={() => onRemoveItem(index)}
-          className="text-gray-400 hover:text-red-500 p-1 transition-colors"
-        >
-          <X size={16} />
-        </button>
-      </div>
-      
-      {/* Quantity and Unit Row */}
-      <div className="flex items-center space-x-3 mb-3">
-        <div className="flex items-center space-x-2">
-          <Stepper
-            value={item.qty}
-            onChange={handleQtyChange}
-            min={1}
-            step={1}
-            className="w-32"
-          />
-        </div>
-        
-        <div className="flex items-center space-x-2 w-full">
-          <div className="flex items-center space-x-1 w-full">
-            <Select
-              value={unitOptions.find((u: any) => u.id === item.unit_id) || null}
-              onChange={handleUnitChange}
-              options={unitOptions}
-              placeholder={
-                loadingConversions 
-                  ? t('common.loading') 
-                  : unitOptions.length === 0 
-                    ? t('common.noUnitsAvailable')
-                    : t('common.select')
-              }
-              className="w-full"
-              disabled={loadingConversions || unitOptions.length === 0}
-            />
-            <Tooltip content={conversionInfo ? `1 ${conversionInfo.to_unit} = ${conversionInfo.qty} ${conversionInfo.from_unit}` : `${item.unit_name || 'unit'} = ${item.unit_name || 'unit'}`} position="left">
-              <button
-                type="button"
-                className="p-1 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
-              >
-                <Info size={14} />
-              </button>
-            </Tooltip>
-          </div>
-        </div>
-      </div>
-      
-      {/* Price and Subtotal Row */}
-      <div className="flex justify-between items-end">
-        <div className="text-sm">
-          <div className="text-gray-500 mb-1">Harga Satuan</div>
-          <div className="font-medium text-lg">Rp{item.price?.toLocaleString() || 0}</div>
-        </div>
-        <div className="text-sm text-right">
-          <div className="text-gray-500 mb-1">Subtotal</div>
-          <div className="font-medium text-lg">Rp{item.subtotal?.toLocaleString() || 0}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 interface ProductRowProps {
   product: ProductOption;
@@ -269,13 +37,16 @@ function ProductRow({ product, onAddToCart, cartItems }: ProductRowProps & { car
   
   // Determine button text and state
   let buttonText = t('sales.addToCart');
+  let buttonVariant: 'primary' | 'secondary' | 'danger' = 'primary';
   let isDisabled = false;
   
   if (isInCart) {
     buttonText = t('sales.inCart');
+    buttonVariant = 'secondary';
     isDisabled = true;
   } else if (isOutOfStock) {
     buttonText = t('sales.outOfStock');
+    buttonVariant = 'danger';
     isDisabled = true;
   }
 
@@ -292,36 +63,44 @@ function ProductRow({ product, onAddToCart, cartItems }: ProductRowProps & { car
   }
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200 hover:bg-gray-50">
-      <div className="flex-1">
-        <div className="font-medium text-gray-900 mb-1">
-          {product.product_name}
+    <div className="flex items-center justify-between p-3 border-b border-gray-200 hover:bg-gray-50 group">
+      <div className="flex-1 min-w-0">
+        {/* Line 1: Product name and stock */}
+        <div className="flex items-center justify-between mb-1">
+          <div className="font-medium text-gray-900 truncate pr-2">
+            {product.product_name}
+          </div>
+          {!isOutOfStock && (
+            <div className="text-sm text-gray-600 font-medium flex-shrink-0">
+              {stockInfo ? `${stockInfo.stock.toLocaleString()} ${stockInfo.unit_name}` : ''}
+            </div>
+          )}
         </div>
-        <div className="text-sm text-gray-600 space-y-1">
-          <div>{product.sku || product.barcode || 'No SKU/Barcode'}</div>
-          <div>
-            {label}
+        
+        {/* Line 2: Category/Manufacturer info */}
+        <div className="text-sm text-gray-600 truncate">
+          {label}
+        </div>
+        
+        {/* Product details on hover/expand - hidden by default */}
+        <div className="hidden group-hover:block mt-2 pt-2 border-t border-gray-100">
+          <div className="text-xs text-gray-500">
+            {product.sku && <span className="mr-3">SKU: {product.sku}</span>}
+            {product.barcode && <span>Barcode: {product.barcode}</span>}
+            {!product.sku && !product.barcode && <span>No SKU/Barcode</span>}
           </div>
         </div>
       </div>
       
-      <div className="flex items-center space-x-4">
-        {/* Only show stock info if product is not out of stock */}
-        {!isOutOfStock && (
-          <div className="text-right">
-            <div className="text-sm text-gray-500">{t('sales.stock')}</div>
-            <div className="font-medium">
-              {stockInfo ? `${stockInfo.stock.toLocaleString()} ${stockInfo.unit_name}` : ''}
-            </div>
-          </div>
-        )}
-        
+      <div className="flex items-center ml-3">
         <Button
           onClick={() => onAddToCart(product)}
           disabled={isDisabled}
-          className="flex items-center space-x-1"
+          variant={buttonVariant}
+          size="sm"
+          className="flex items-center space-x-1 min-w-[100px]"
         >
-          {isDisabled ? <></> : <Plus size={16} />}
+          {!isDisabled && <Plus size={14} />}
           <span>{buttonText}</span>
         </Button>
       </div>
@@ -579,8 +358,8 @@ export default function SaleFormComponent() {
         <div className="bg-white rounded-lg shadow h-full flex">
           {/* Two Column Layout */}
           <div className="flex flex-col lg:flex-row w-full h-full">
-            {/* Left Column - Products List (2/3 width on desktop, full width on tablet) */}
-            <div className="w-full lg:w-2/3 lg:border-r border-gray-200 flex flex-col">
+            {/* Left Column - Products List (1/3 width on desktop, full width on tablet) */}
+            <div className="w-full lg:w-1/3 lg:border-r border-gray-200 flex flex-col">
               {/* Search and Filters - Fixed */}
               <div className="flex-shrink-0 p-3 border-b border-gray-200">
                 <div className="space-y-3">
@@ -595,84 +374,88 @@ export default function SaleFormComponent() {
                   {/* Filters */}
                   <div className="space-y-3">
                     <div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCategoryFilter(null)}
-                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                            selectedCategory === null
-                              ? 'bg-blue-500 text-white border-blue-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {t('sales.allCategories')}
-                        </button>
-                        {categoryOptions.map((category) => (
+                      <div className="overflow-x-auto">
+                        <div className="flex gap-2 min-w-max">
                           <button
-                            key={category.id}
                             type="button"
-                            onClick={() => handleCategoryFilter(category.id)}
-                            className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                              selectedCategory === category.id
+                            onClick={() => handleCategoryFilter(null)}
+                            className={`px-3 py-1 text-sm rounded-md border transition-colors flex-shrink-0 ${
+                              selectedCategory === null
                                 ? 'bg-blue-500 text-white border-blue-500'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                             }`}
                           >
-                            {category.name}
+                            {t('sales.allCategories')}
                           </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => handleCategoryFilter(0)}
-                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                            selectedCategory === 0
-                              ? 'bg-blue-500 text-white border-blue-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {t('sales.unCategory')}
-                        </button>
+                          {categoryOptions.map((category) => (
+                            <button
+                              key={category.id}
+                              type="button"
+                              onClick={() => handleCategoryFilter(category.id)}
+                              className={`px-3 py-1 text-sm rounded-md border transition-colors flex-shrink-0 ${
+                                selectedCategory === category.id
+                                  ? 'bg-blue-500 text-white border-blue-500'
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {category.name}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => handleCategoryFilter(0)}
+                            className={`px-3 py-1 text-sm rounded-md border transition-colors flex-shrink-0 ${
+                              selectedCategory === 0
+                                ? 'bg-blue-500 text-white border-blue-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {t('sales.unCategory')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
-                    <div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleManufacturerFilter(null)}
-                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                            selectedManufacturer === null
-                              ? 'bg-blue-500 text-white border-blue-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {t('sales.allManufacturers')}
-                        </button>
-                        {manufacturerOptions.map((manufacturer) => (
+                                        <div>
+                      <div className="overflow-x-auto">
+                        <div className="flex gap-2 min-w-max">
                           <button
-                            key={manufacturer.id}
                             type="button"
-                            onClick={() => handleManufacturerFilter(manufacturer.id)}
-                            className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                              selectedManufacturer === manufacturer.id
+                            onClick={() => handleManufacturerFilter(null)}
+                            className={`px-3 py-1 text-sm rounded-md border transition-colors flex-shrink-0 ${
+                              selectedManufacturer === null
                                 ? 'bg-blue-500 text-white border-blue-500'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                             }`}
                           >
-                            {manufacturer.name}
+                            {t('sales.allManufacturers')}
                           </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => handleManufacturerFilter(0)}
-                          className={`px-3 py-1 text-sm rounded-md border transition-colors ${
-                            selectedManufacturer === 0
-                              ? 'bg-blue-500 text-white border-blue-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {t('sales.unManufacturer')}
-                        </button>
+                          {manufacturerOptions.map((manufacturer) => (
+                            <button
+                              key={manufacturer.id}
+                              type="button"
+                              onClick={() => handleManufacturerFilter(manufacturer.id)}
+                              className={`px-3 py-1 text-sm rounded-md border transition-colors flex-shrink-0 ${
+                                selectedManufacturer === manufacturer.id
+                                  ? 'bg-blue-500 text-white border-blue-500'
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {manufacturer.name}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => handleManufacturerFilter(0)}
+                            className={`px-3 py-1 text-sm rounded-md border transition-colors flex-shrink-0 ${
+                              selectedManufacturer === 0
+                                ? 'bg-blue-500 text-white border-blue-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {t('sales.unManufacturer')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -680,13 +463,24 @@ export default function SaleFormComponent() {
               </div>
 
               {/* Products List - Scrollable with Infinite Loading */}
-              <div className="flex-1 min-h-0 overflow-y-auto h-64 lg:h-auto" onScroll={handleScroll}>
+              <div className="flex-1 min-h-0 overflow-y-auto h-48 lg:h-auto bg-gray-50" onScroll={handleScroll}>
                 {productsLoading && productOptions.length === 0 ? (
-                  <div className="p-8 text-center">{t('common.loading')}</div>
+                  <div className="p-8 text-center">
+                    <div className="inline-flex items-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-3"></div>
+                      {t('common.loading')}
+                    </div>
+                  </div>
                 ) : productsError ? (
-                  <div className="p-8 text-center text-red-600">{productsError}</div>
+                  <div className="p-8 text-center">
+                    <div className="text-red-600 mb-2">{t('common.error')}</div>
+                    <div className="text-sm text-gray-600">{productsError}</div>
+                  </div>
                 ) : productOptions.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">{t('sales.noProducts')}</div>
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="text-lg font-medium mb-2">{t('sales.noProducts')}</div>
+                    <div className="text-sm">Try adjusting your search or filters</div>
+                  </div>
                 ) : (
                   <>
                     {productOptions.map((product) => (
@@ -703,7 +497,7 @@ export default function SaleFormComponent() {
                       <div className="p-4 text-center text-gray-500">
                         <div className="inline-flex items-center">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-                          {t('sales.loadingMore')}
+                          <span className="text-sm">{t('sales.loadingMore')}</span>
                         </div>
                       </div>
                     )}
@@ -719,21 +513,23 @@ export default function SaleFormComponent() {
               </div>
             </div>
 
-            {/* Right Column - Cart (1/3 width on desktop, full width on tablet) */}
-            <div className="w-full lg:w-1/3 flex flex-col lg:border-t-0 border-t border-gray-200">
+            {/* Right Column - Cart (2/3 width on desktop, full width on tablet) */}
+            <div className="w-full lg:w-2/3 flex flex-col lg:border-t-0 border-t border-gray-200">
               {/* Cart Header - Fixed */}
               <div className="flex-shrink-0 p-4 border-b border-gray-200">
-                <div className="flex items-center space-x-2">
-                  <ShoppingCart size={20} />
-                  <h3 className="text-lg font-medium">{t('sales.cart')}</h3>
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                    {formData.items.length}
-                  </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <ShoppingCart size={20} />
+                    <h3 className="text-lg font-medium">{t('sales.cart')}</h3>
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                      {formData.items.length}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Cart Items - Scrollable */}
-              <div className="flex-1 min-h-0 p-4 overflow-y-auto h-64 lg:h-auto">
+              <div className="flex-1 min-h-0 p-4 overflow-y-auto h-32 lg:h-auto">
                 {formData.items.length === 0 ? (
                   <div className="text-center text-gray-500 py-8">
                     <ShoppingCart size={48} className="mx-auto mb-4 text-gray-300" />
@@ -742,25 +538,19 @@ export default function SaleFormComponent() {
                 ) : (
                   <div className="space-y-4">
                     {/* Cart Items */}
-                    <div className="space-y-3">
-                      {formData.items.map((item, index) => (
-                        <CartItem
-                          key={`${item.product_id}-${index}`}
-                          item={item}
-                          productOptions={productOptions}
-                          onUpdateItem={updateCartItem}
-                          onRemoveItem={removeCartItem}
-                          onFetchConversions={fetchProductConversions}
-                          index={index}
-                        />
-                      ))}
-                    </div>
+                    <CartTable
+                      items={formData.items}
+                      productOptions={productOptions}
+                      onUpdateItem={updateCartItem}
+                      onRemoveItem={removeCartItem}
+                      onFetchConversions={fetchProductConversions}
+                    />
 
                     {/* Total */}
                     <div className="border-t pt-4">
-                      <div className="flex justify-between items-center text-lg font-medium">
-                        <span>{t('sales.total')}</span>
-                        <span>{total.toLocaleString()}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-medium text-gray-700">{t('sales.total')}</span>
+                        <span className="text-2xl font-bold text-gray-900">Rp{total.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

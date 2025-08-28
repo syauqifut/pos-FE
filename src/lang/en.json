@@ -55,7 +55,14 @@
     "conversionEdit": "Edit Conversion",
     "sales": "Sales",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "unit": "Unit",
+    "unitList": "Unit List",
+    "unitCreate": "Create Unit",
+    "unitEdit": "Edit Unit",
+    "unitDetail": "Unit Detail",
+    "transaction": "Transaction",
+    "sale": "Sale"
   },
   "app": {
     "name": "POS APP",
