@@ -109,7 +109,10 @@
     "transactionList": "Transaction List",
     "transactionPurchase": "Purchase",
     "transactionAdjustment": "Adjustment",
-    "transactionSale": "Sale"
+    "transactionSale": "Sale",
+    "setupDevice": "Device",
+    "setupDevicePrinter": "Printer",
+    "setupDeviceLabel": "Label"
   },
   "sales": {
     "title": "Sales",

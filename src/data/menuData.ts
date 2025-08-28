@@ -10,7 +10,8 @@ import {
   Tags,
   Building,
   Scale,
-  List
+  List,
+  Printer
 } from 'lucide-react'
 import { MenuItem } from '../types/menu'
 import { t } from '../utils/i18n'
@@ -127,6 +128,18 @@ export const menuData: MenuItem[] = [
         name: t('sidebar.setupProductUnit'),
         path: '/setup/product/unit',
         icon: Scale
+      },
+      {
+        id: 'setup-device-label',
+        name: t('sidebar.setupDevice'),
+        icon: Printer,
+        isLabel: true
+      },
+      {
+        id: 'setup-device-printer',
+        name: t('sidebar.setupDevicePrinter'),
+        path: '/setup/device/printer',
+        icon: Printer
       }
     ]
   }

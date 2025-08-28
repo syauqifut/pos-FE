@@ -32,6 +32,7 @@ import SaleForm from './pages/transaction/sale/pages/SaleForm'
 import TransactionList from './pages/transaction/list/pages/TransactionList'
 import SelectorTest from './examples/SelectorTest'
 import SimpleSelectorTest from './examples/SimpleSelectorTest'
+import PrinterSettings from './pages/setup/device/printer/pages/PrinterManager'
 
 function App() {
   return (
@@ -81,6 +82,7 @@ function App() {
               <Route path="/setup/product/create" element={<ProductCreate />} />
               <Route path="/setup/product/:id" element={<ProductDetail />} />
               <Route path="/setup/product/:id/edit" element={<ProductEdit />} />
+              <Route path="/setup/device/printer" element={<PrinterSettings />} />
             </Routes>
           </Layout>
         </RequireAuth>
