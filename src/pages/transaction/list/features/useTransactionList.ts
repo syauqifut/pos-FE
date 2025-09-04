@@ -9,6 +9,7 @@ export interface TransactionProduct {
 }
 
 export interface TransactionItem {
+  id: number
   transactionNo: string
   type: 'purchase' | 'sale' | 'adjustment'
   time: string
@@ -134,10 +135,10 @@ export function useTransactionList(): UseTransactionListReturn {
           // Append new data to existing data, but prevent duplicates
           setTransactions(prev => {
             // Get existing transaction numbers to check for duplicates
-            const existingIds = new Set(prev.map(t => t.transactionNo));
+            const existingIds = new Set(prev.map(t => t.id));
             
             // Filter out duplicates from new data
-            const newUniqueData = (res.data || []).filter(t => !existingIds.has(t.transactionNo));
+            const newUniqueData = (res.data || []).filter(t => !existingIds.has(t.id));
             
             const newData = [...prev, ...newUniqueData];
             console.log('Appending data:', { 
@@ -145,8 +146,8 @@ export function useTransactionList(): UseTransactionListReturn {
               newLength: res.data?.length,
               uniqueNewLength: newUniqueData.length,
               totalLength: newData.length,
-              prevData: prev.slice(0, 3).map(t => t.transactionNo), // Show first 3 transaction numbers
-              newData: newUniqueData.slice(0, 3).map(t => t.transactionNo), // Show first 3 new transaction numbers
+              prevData: prev.slice(0, 3).map(t => t.id), // Show first 3 transaction numbers
+              newData: newUniqueData.slice(0, 3).map(t => t.id), // Show first 3 new transaction numbers
               duplicatesRemoved: (res.data?.length || 0) - newUniqueData.length
             });
             return newData;

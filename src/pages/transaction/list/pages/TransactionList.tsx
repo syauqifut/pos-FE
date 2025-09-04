@@ -178,6 +178,19 @@ export default function TransactionList() {
     }
   }
 
+  const handleDetail = (transactionNo: string) => {
+    // For now, just show the transaction number
+    alert(`Detail for transaction: ${transactionNo}`)
+  }
+
+  const handlePrint = (transaction: TransactionItem) => {
+    if (window.PrintSaleBridge) {
+      window.PrintSaleBridge.postMessage(transaction.id);
+    } else {
+      alert('Print function not available')
+    }
+  }
+
   const columns: ExpandableTableColumn<TransactionItem>[] = useMemo(() => [
     {
       header: '#',
@@ -221,6 +234,28 @@ export default function TransactionList() {
       key: 'user',
       align: 'left',
       sortable: true
+    },
+    {
+      header: 'Action',
+      key: 'action',
+      width: 120,
+      align: 'center',
+      render: (_: any, row: TransactionItem) => (
+        <div className="flex gap-2 justify-center">
+          <button
+            onClick={() => handleDetail(row.transactionNo)}
+            className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Detail
+          </button>
+          <button
+            onClick={() => handlePrint(row)}
+            className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          >
+            Print
+          </button>
+        </div>
+      )
     },
   ], [])
 

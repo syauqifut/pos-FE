@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiGet, apiPost } from '../../../../utils/apiClient';
 import { t } from '../../../../utils/i18n';
+import { config } from '../../../../utils/config';
 
 // Types
 export interface SaleItem {
@@ -56,7 +57,7 @@ export interface Sale {
   date: string;
   items: SaleItem[];
   total: number;
-  amount_paid: number;
+  total_paid: number;
   payment_type: string;
   createdAt: string;
   updatedAt: string;
@@ -328,6 +329,12 @@ export function useSaleForm(): UseSaleFormReturn {
       
       if (response.success) {
         setSuccess(t('sales.createSuccess'));
+
+        // Bridge to Android when sale is successful (only if enabled in config)
+        if (config.USE_ANDROID_PRINTER && window.PrintSaleBridge) {
+          window.PrintSaleBridge.postMessage(response.data.id.toString());
+        }
+        
         return response.data;
       } else {
         setError(response.message || t('common.error'));

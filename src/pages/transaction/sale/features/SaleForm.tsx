@@ -309,7 +309,7 @@ export default function SaleFormComponent() {
       date: formData.date || new Date().toISOString().split('T')[0],
       items: validatedItems,
       total: computedTotal,
-      amount_paid: amountPaidFromModal,
+      total_paid: amountPaidFromModal,
       payment_type: 'cash'
     };
     
