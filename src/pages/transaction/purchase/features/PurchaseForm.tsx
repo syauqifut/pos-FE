@@ -470,7 +470,7 @@ export default function PurchaseForm() {
   const { productOptions, loading: productLoading, fetchFilteredProducts } = useProductOptions();
   const { categoryOptions, loading: categoryLoading } = useCategoryOptions();
   const { manufacturerOptions, loading: manufacturerLoading } = useManufacturerOptions();
-  const { formData, updateFormData, clearDraft, hasDraft, isLoading: draftLoading } = usePurchaseFormDraft();
+  const { formData, updateFormData, clearDraft, isLoading: draftLoading } = usePurchaseFormDraft();
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({});
   const [checkedItems, setCheckedItems] = useState<{ [key: number]: boolean }>({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -636,7 +636,7 @@ export default function PurchaseForm() {
       .map(key => parseInt(key))
       .sort((a, b) => b - a); // Remove from end to start to maintain indices
 
-    let newItems = [...formData.items];
+    const newItems = [...formData.items];
     indicesToRemove.forEach(index => {
       newItems.splice(index, 1);
     });
@@ -823,20 +823,6 @@ export default function PurchaseForm() {
     }
 
     setShowConfirmDialog(true);
-  };
-
-  // Reset form to initial state
-  const resetForm = () => {
-    clearDraft();
-    setError(null);
-    setFieldErrors({});
-    setCheckedItems({});
-    setProductConversionsByRow({}); // Clear all product conversions
-    setProductOptionsByRow({}); // Clear all product options
-    // Add the first item back after clearing
-    setTimeout(() => {
-      addPurchaseItem();
-    }, 0);
   };
 
   // Handle confirmed submission

@@ -75,12 +75,6 @@ interface UseManufacturerOptionsReturn {
   error: string | null;
 }
 
-interface UseUnitOptionsReturn {
-  unitOptions: Option[];
-  loading: boolean;
-  error: string | null;
-}
-
 interface UseProductConversionsReturn {
   productConversions: ProductConversion[];
   loading: boolean;

@@ -1,5 +1,4 @@
-import React from 'react';
-import { TableProps, SortConfig } from '../../../types/table';
+import { TableProps } from '../../../types/table';
 import { t } from '../../../utils/i18n';
 import Loader from '../Loader/Loader';
 import Empty from '../Empty/Empty';

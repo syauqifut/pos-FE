@@ -651,7 +651,7 @@ export default function AdjustmentForm() {
       .map(key => parseInt(key))
       .sort((a, b) => b - a); // Remove from end to start to maintain indices
 
-    let newItems = [...formData.items];
+    const newItems = [...formData.items];
     indicesToRemove.forEach(index => {
       newItems.splice(index, 1);
     });

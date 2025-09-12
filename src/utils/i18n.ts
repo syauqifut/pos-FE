@@ -13,9 +13,10 @@ const translations = await (async () => {
 /**
  * Translation function that safely accesses nested keys from the language JSON
  * @param key - Dot-separated key like 'sidebar.dashboard' or 'sales.newTransaction'
- * @returns The translated string or the key itself if not found
+ * @param params - Optional object with interpolation parameters
+ * @returns The translated string with interpolated values or the key itself if not found
  */
-export const t = (key: string): string => {
+export const t = (key: string, params?: Record<string, any>): string => {
   try {
     const keys = key.split('.')
     let result: any = translations
@@ -28,7 +29,19 @@ export const t = (key: string): string => {
       }
     }
     
-    return typeof result === 'string' ? result : key
+    if (typeof result !== 'string') {
+      return key
+    }
+    
+    // If no params provided, return the string as-is
+    if (!params) {
+      return result
+    }
+    
+    // Replace placeholders with actual values
+    return result.replace(/\{(\w+)\}/g, (match, paramKey) => {
+      return params[paramKey] !== undefined ? String(params[paramKey]) : match
+    })
   } catch {
     return key
   }

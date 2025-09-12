@@ -1,19 +1,17 @@
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button/Button';
 import Alert from '../../../../components/ui/Alert/Alert';
 import Loader from '../../../../components/ui/Loader/Loader';
-import { Dropdown, DropdownItem } from '../../../../components/ui/Dropdown/Dropdown';
 import { useProductDetail } from '../features/useProduct';
 import { t } from '../../../../utils/i18n';
-import { ArrowLeft, Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const productId = parseInt(id || '0');
   
-  const { product, loading, error, refreshProduct } = useProductDetail(productId);
+  const { product, loading, error } = useProductDetail(productId);
 
   const handleEdit = () => {
     navigate(`/setup/product/${productId}/edit`);

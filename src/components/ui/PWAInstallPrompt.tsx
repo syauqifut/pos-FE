@@ -50,7 +50,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ className = 
       </div>
       
       <p className="text-sm text-gray-600 mb-4">
-        Install this app on your device for quick and easy access when you're on the go. It works offline and feels like a native app.
+        Install this app on your device for quick and easy access when you&apos;re on the go. It works offline and feels like a native app.
       </p>
       
       <div className="flex space-x-3">

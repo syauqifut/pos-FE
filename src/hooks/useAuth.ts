@@ -5,8 +5,7 @@ import {
   AuthData, 
   getAuthData, 
   setAuthData, 
-  clearAuthData, 
-  isAuthenticated as checkIsAuthenticated 
+  clearAuthData
 } from '../utils/auth'
 import { apiPost } from '../utils/apiClient'
 import { t } from '../utils/i18n'

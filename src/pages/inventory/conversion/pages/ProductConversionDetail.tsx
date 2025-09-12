@@ -25,7 +25,7 @@ export default function ProductConversionDetail() {
   const navigate = useNavigate();
   const productId = parseInt(id || '0');
   
-  const { conversionDetail, conversionItems, defaultUnits, priceHistory, loading, error, sortConversionItems, refreshConversionDetail } = useConversionDetail(productId);
+  const { conversionDetail, conversionItems, priceHistory, loading, error, sortConversionItems, refreshConversionDetail } = useConversionDetail(productId);
   const { deleteConversion, loading: deleteLoading } = useConversionForm();
   const [sortConfig, setSortConfig] = useState<SortConfig | undefined>();
 

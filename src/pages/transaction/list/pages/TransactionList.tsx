@@ -10,16 +10,12 @@ export default function TransactionList() {
     transactions, 
     loading, 
     loadingMore,
-    error, 
     pagination, 
     filters,
-    sort,
     searchTransactions, 
     filterByType,
     sortTransactions,
-    changePage, 
-    loadMoreTransactions,
-    setError 
+    loadMoreTransactions
   } = useTransactionList()
   
   const [searchTerm, setSearchTerm] = useState('')
@@ -295,7 +291,7 @@ export default function TransactionList() {
                 </div>
                 {/* Results Info */}
                 <div className="text-sm text-gray-600">
-                  {t('transaction.list.showingResults', { count: transactions.length, total: pagination.totalItems })}
+                  {t('transaction.list.showingResults', { count: transactions.length.toString(), total: pagination.totalItems.toString() })}
                   {pagination.hasNext && (
                     <span className="text-blue-600 ml-2">{t('transaction.list.scrollToLoadMore')}</span>
                   )}

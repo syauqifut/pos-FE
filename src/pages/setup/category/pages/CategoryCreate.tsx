@@ -1,4 +1,3 @@
-import React from 'react';
 import CategoryForm from '../features/CategoryForm';
 
 export default function CategoryCreate() {

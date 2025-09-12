@@ -1,4 +1,3 @@
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button/Button';
 import Alert from '../../../../components/ui/Alert/Alert';
@@ -55,12 +54,6 @@ export default function StockDetail() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const getStockStatusColor = (quantity: number) => {
-    if (quantity < 10) return 'text-red-600';
-    if (quantity < 50) return 'text-yellow-600';
-    return 'text-green-600';
   };
 
   return (

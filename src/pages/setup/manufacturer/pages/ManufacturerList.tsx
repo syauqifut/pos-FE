@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table } from '../../../../components/ui/Table/Table';
 import Button from '../../../../components/ui/Button/Button';
@@ -11,7 +11,7 @@ import { Edit, Trash2, Plus } from 'lucide-react';
 
 export default function ManufacturerList() {
   const navigate = useNavigate();
-  const { manufacturers, loading, error, refreshManufacturers, deleteManufacturer, searchManufacturers, sortManufacturers } = useManufacturerList();
+  const { manufacturers, loading, error, deleteManufacturer, searchManufacturers, sortManufacturers } = useManufacturerList();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig | undefined>();
 
@@ -57,7 +57,7 @@ export default function ManufacturerList() {
       key: 'no',
       width: 80,
       align: 'center',
-      render: (_, manufacturer, index) => index + 1
+      render: (_, __, index) => index + 1
     },
     {
       header: t('manufacturer.name'),

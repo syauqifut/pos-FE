@@ -52,7 +52,7 @@ export const useLoginForm = (options: UseLoginFormOptions = {}): UseLoginFormRet
   
   const [errors, setErrors] = useState<LoginFormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading] = useState(false)
 
   const validateForm = (): boolean => {
     const newErrors: LoginFormErrors = {}

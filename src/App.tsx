@@ -30,8 +30,6 @@ import PurchaseForm from './pages/transaction/purchase/pages/PurchaseForm'
 import AdjustmentForm from './pages/transaction/adjustment/pages/AdjustmentForm'
 import SaleForm from './pages/transaction/sale/pages/SaleForm'
 import TransactionList from './pages/transaction/list/pages/TransactionList'
-import SelectorTest from './examples/SelectorTest'
-import SimpleSelectorTest from './examples/SimpleSelectorTest'
 import PrinterSettings from './pages/setup/device/printer/pages/PrinterManager'
 
 function App() {
@@ -47,9 +45,6 @@ function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
-              {/* Test Routes */}
-              <Route path="/test/selectors" element={<SelectorTest />} />
-              <Route path="/test/simple-selectors" element={<SimpleSelectorTest />} />
               {/* Inventory Routes */}
               <Route path="/inventory/stock" element={<StockList />} />
               <Route path="/inventory/stock/:id" element={<StockDetail />} />

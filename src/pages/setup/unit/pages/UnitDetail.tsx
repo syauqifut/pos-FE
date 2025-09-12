@@ -1,4 +1,3 @@
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button/Button';
 import Alert from '../../../../components/ui/Alert/Alert';
@@ -12,7 +11,7 @@ export default function UnitDetail() {
   const navigate = useNavigate();
   const unitId = parseInt(id || '0');
   
-  const { unit, loading, error, refreshUnit } = useUnitDetail(unitId);
+  const { unit, loading, error } = useUnitDetail(unitId);
 
   const handleEdit = () => {
     navigate(`/setup/product/unit/${unitId}/edit`);

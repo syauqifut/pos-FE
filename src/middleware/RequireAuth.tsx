@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Loader } from '../components/ui'
-import { isAuthenticated, getUser, getToken, clearAuthData, hasValidToken } from '../utils/auth'
+import { getUser, getToken, clearAuthData, hasValidToken } from '../utils/auth'
 import { apiGet } from '../utils/apiClient'
 import { t } from '../utils/i18n'
 

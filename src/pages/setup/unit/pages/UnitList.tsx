@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table } from '../../../../components/ui/Table/Table';
 import Button from '../../../../components/ui/Button/Button';
@@ -11,7 +11,7 @@ import { Edit, Trash2, Plus } from 'lucide-react';
 
 export default function UnitList() {
   const navigate = useNavigate();
-  const { units, loading, error, refreshUnits, deleteUnit, searchUnits, sortUnits } = useUnitList();
+  const { units, loading, error, deleteUnit, searchUnits, sortUnits } = useUnitList();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig | undefined>();
 
@@ -57,7 +57,7 @@ export default function UnitList() {
       key: 'no',
       width: 80,
       align: 'center',
-      render: (_, unit, index) => index + 1
+      render: (_, __, index) => index + 1
     },
     {
       header: t('unit.name'),

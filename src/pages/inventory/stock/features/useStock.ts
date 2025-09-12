@@ -69,7 +69,7 @@ export function useStock(): UseStockReturn {
   const [currentSort, setCurrentSort] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [totalPages, setTotalPages] = useState(0);
+  const [, setTotalPages] = useState(0);
 
   const fetchStocks = async (searchTerm: string = '', sortConfig: { key: string; direction: 'asc' | 'desc' } | null = null, page: number = 1, append: boolean = false) => {
     // Cancel previous request if it exists

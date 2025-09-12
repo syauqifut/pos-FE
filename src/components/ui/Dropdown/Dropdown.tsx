@@ -137,26 +137,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
     }
   }
 
-  const handleMenuClick = (event: React.MouseEvent) => {
+  const handleMenuClick = () => {
     if (closeOnClick) {
       // Close dropdown when clicking on menu items
       setIsOpen(false)
       onClose?.()
-    }
-    
-    // Allow event to bubble up for menu item clicks
-  }
-
-  // Position classes for fixed positioning
-  const getPositionClasses = () => {
-    switch (position) {
-      case 'left':
-        return 'left-0'
-      case 'center':
-        return 'left-1/2 transform -translate-x-1/2'
-      case 'right':
-      default:
-        return 'right-0'
     }
   }
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../../../components/ui/Button/Button';
 import Alert from '../../../../components/ui/Alert/Alert';
@@ -12,7 +11,7 @@ export default function CategoryDetail() {
   const navigate = useNavigate();
   const categoryId = parseInt(id || '0');
   
-  const { category, loading, error, refreshCategory } = useCategoryDetail(categoryId);
+  const { category, loading, error } = useCategoryDetail(categoryId);
 
   const handleEdit = () => {
     navigate(`/setup/product/category/${categoryId}/edit`);

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 interface StepperProps {
@@ -27,12 +26,6 @@ export default function Stepper({
 
   const handleIncrement = () => {
     const newValue = max ? Math.min(max, value + step) : value + step;
-    onChange(newValue);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = parseFloat(e.target.value) || 0;
-    const newValue = max ? Math.min(max, Math.max(min, inputValue)) : Math.max(min, inputValue);
     onChange(newValue);
   };
 

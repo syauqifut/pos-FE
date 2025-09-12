@@ -320,7 +320,7 @@ export function useConversionDetail(productId: number): UseConversionDetailRetur
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
-  const [_currentSort, setCurrentSort] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [, setCurrentSort] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   const fetchConversionDetail = async (sortConfig: { key: string; direction: 'asc' | 'desc' } | null = null) => {
     // Cancel previous request if it exists
