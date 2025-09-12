@@ -144,7 +144,7 @@ export default function ConfirmSaleModal({
                     onClick={clearAmount}
                     className="h-full w-full text-xs"
                   >
-                    Clear
+                    {t('sales.clear')}
                   </Button>
                 </div>
                 
@@ -172,7 +172,7 @@ export default function ConfirmSaleModal({
                     onClick={setExact}
                     className="h-full w-full text-xs"
                   >
-                    Exact
+                    {t('sales.exact')}
                   </Button>
                 </div>
               </div>

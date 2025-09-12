@@ -5,6 +5,7 @@ import { InlineStepper } from '../../../../components/ui/Stepper';
 import Tooltip from '../../../../components/ui/Tooltip/Tooltip';
 import { Info } from 'lucide-react';
 import { SaleItem, ProductOption, Option } from './useSale';
+import { t } from '../../../../utils/i18n';
 
 interface CartTableProps {
   items: SaleItem[];
@@ -182,10 +183,10 @@ function CartTableRow({
               options={unitOptions}
               placeholder={
                 loadingConversions 
-                  ? 'Loading...' 
+                  ? t('common.loading') 
                   : unitOptions.length === 0 
-                    ? 'No units'
-                    : 'Select unit'
+                    ? t('common.noUnitsAvailable')
+                    : t('purchase.selectUnit')
               }
               disabled={loadingConversions || unitOptions.length === 0}
             />
@@ -239,7 +240,7 @@ function CartTableRow({
         <button
           onClick={() => onRemoveItem(index)}
           className="text-gray-400 hover:text-red-500 p-1 transition-colors rounded"
-          title="Remove item"
+          title={t('common.delete')}
         >
           <X size={16} />
         </button>
@@ -261,7 +262,7 @@ export default function CartTable({
         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
           <ShoppingCart size={24} className="text-gray-400" />
         </div>
-        <p className="text-lg font-medium text-gray-600 mb-2">Cart is empty</p>
+        <p className="text-lg font-medium text-gray-600 mb-2">{t('sales.emptyCart')}</p>
         <p className="text-sm text-gray-500">Add products from the left panel to get started</p>
       </div>
     );
@@ -273,19 +274,19 @@ export default function CartTable({
         <thead>
           <tr className="border-b-2 border-gray-300 bg-gray-100">
             <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Product
+              {t('transaction.purchase.tableHeaders.product')}
             </th>
             <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Unit
+              {t('transaction.purchase.tableHeaders.unit')}
             </th>
             <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Qty
+              {t('transaction.purchase.tableHeaders.quantity')}
             </th>
             <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Price
+              {t('transaction.purchase.tableHeaders.price')}
             </th>
             <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider">
-              Subtotal
+              {t('sales.subtotal')}
             </th>
             <th className="px-4 py-2 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider !w-2">
               

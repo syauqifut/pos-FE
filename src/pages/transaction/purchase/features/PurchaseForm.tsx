@@ -454,7 +454,7 @@ function PurchaseItemRow({
           type="button"
           onClick={onDuplicate}
           className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-          title="Duplicate row"
+          title={t('transaction.purchase.duplicateRow')}
         >
           <Copy className="w-4 h-4" />
         </button>
@@ -999,7 +999,7 @@ export default function PurchaseForm() {
                       className="text-red-600 hover:text-red-700 text-sm md:text-base"
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
-                      <span className="hidden sm:inline">Delete</span>
+                      <span className="hidden sm:inline">{t('common.delete')}</span>
                     </Button>
                     <Button
                       type="button"
@@ -1009,7 +1009,7 @@ export default function PurchaseForm() {
                       className="text-sm md:text-base"
                     >
                       <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Add Item</span>
+                      <span className="hidden sm:inline">{t('purchase.addItem')}</span>
                     </Button>
                   </div>
                 </div>
@@ -1040,25 +1040,25 @@ export default function PurchaseForm() {
                           />
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '200px', minWidth: '200px', maxWidth: '200px'}}>
-                          <div className="truncate">Product</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.product')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '120px', minWidth: '120px', maxWidth: '120px'}}>
-                          <div className="truncate">Category</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.category')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '120px', minWidth: '120px', maxWidth: '120px'}}>
-                          <div className="truncate">Manufacturer</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.manufacturer')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '100px', minWidth: '100px', maxWidth: '100px'}}>
-                          <div className="truncate">Unit</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.unit')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '90px', minWidth: '90px', maxWidth: '90px'}}>
-                          <div className="truncate">Price</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.price')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '90px', minWidth: '90px', maxWidth: '90px'}}>
-                          <div className="truncate">Quantity</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.quantity')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '90px', minWidth: '90px', maxWidth: '90px'}}>
-                          <div className="truncate">Total Price</div>
+                          <div className="truncate">{t('transaction.purchase.tableHeaders.totalPrice')}</div>
                         </th>
                         <th className="p-2 md:p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200" style={{width: '40px', minWidth: '40px', maxWidth: '40px'}}>
                           

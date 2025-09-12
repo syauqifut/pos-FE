@@ -63,7 +63,7 @@ function ProductRow({ product, onAddToCart, cartItems }: ProductRowProps & { car
   }
 
   return (
-    <div className="flex items-center justify-between p-3 border-b border-gray-200 hover:bg-gray-50 group">
+    <div className="flex items-center justify-between p-3 border-b border-gray-200">
       <div className="flex-1 min-w-0">
         {/* Line 1: Product name and stock */}
         <div className="flex items-center justify-between mb-1">
@@ -80,15 +80,6 @@ function ProductRow({ product, onAddToCart, cartItems }: ProductRowProps & { car
         {/* Line 2: Category/Manufacturer info */}
         <div className="text-sm text-gray-600 truncate">
           {label}
-        </div>
-        
-        {/* Product details on hover/expand - hidden by default */}
-        <div className="hidden group-hover:block mt-2 pt-2 border-t border-gray-100">
-          <div className="text-xs text-gray-500">
-            {product.sku && <span className="mr-3">SKU: {product.sku}</span>}
-            {product.barcode && <span>Barcode: {product.barcode}</span>}
-            {!product.sku && !product.barcode && <span>No SKU/Barcode</span>}
-          </div>
         </div>
       </div>
       

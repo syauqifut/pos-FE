@@ -32,7 +32,7 @@ export default function ProductDetail() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <div className="flex justify-center items-center py-12">
           <Loader size="lg" text={t('ui.loading')} />
         </div>
@@ -42,7 +42,7 @@ export default function ProductDetail() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <Alert variant="error" className="mb-4">
           {error}
         </Alert>
@@ -56,7 +56,7 @@ export default function ProductDetail() {
 
   if (!product) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <Alert variant="error" className="mb-4">
           {t('product.notFound')}
         </Alert>

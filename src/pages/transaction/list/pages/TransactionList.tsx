@@ -3,6 +3,7 @@ import Search from '../../../../components/ui/Search/Search'
 import { ExpandableTable } from '../../../../components/ui/ExpandableTable/ExpandableTable'
 import { ExpandableTableColumn, SortConfig } from '../../../../types/table'
 import { useTransactionList, TransactionItem, TransactionType, SortField, SortDirection } from '../features/useTransactionList'
+import { t } from '../../../../utils/i18n'
 
 export default function TransactionList() {
   const { 
@@ -193,20 +194,20 @@ export default function TransactionList() {
 
   const columns: ExpandableTableColumn<TransactionItem>[] = useMemo(() => [
     {
-      header: '#',
+      header: t('transaction.list.columns.no'),
       key: 'no',
       width: 64,
       align: 'center',
       render: (_: any, _row: TransactionItem, index: number) => index + 1
     },
     {
-      header: 'Transaction No',
+      header: t('transaction.list.columns.transactionNo'),
       key: 'transactionNo',
       align: 'left',
       sortable: true
     },
     {
-      header: 'Type',
+      header: t('transaction.list.columns.type'),
       key: 'type',
       align: 'left',
       sortable: true,
@@ -218,25 +219,25 @@ export default function TransactionList() {
       }
     },
     {
-      header: 'Time',
+      header: t('transaction.list.columns.time'),
       key: 'time',
       align: 'left',
       sortable: true,
       render: (value: any) => <span className="text-gray-700">{formatDateTime(String(value))}</span>
     },
     {
-      header: 'Total Items',
+      header: t('transaction.list.columns.totalItems'),
       key: 'totalItems',
       align: 'right',
     },
     {
-      header: 'User',
+      header: t('transaction.list.columns.user'),
       key: 'user',
       align: 'left',
       sortable: true
     },
     {
-      header: 'Action',
+      header: t('common.actions'),
       key: 'action',
       width: 120,
       align: 'center',
@@ -246,7 +247,7 @@ export default function TransactionList() {
             onClick={() => handleDetail(row.transactionNo)}
             className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
-            Detail
+            {t('common.view')}
           </button>
           <button
             onClick={() => handlePrint(row)}
@@ -260,10 +261,10 @@ export default function TransactionList() {
   ], [])
 
   const typeOptions: { value: TransactionType; label: string }[] = [
-    { value: 'all', label: 'All Types' },
-    { value: 'purchase', label: 'Purchase' },
-    { value: 'sale', label: 'Sale' },
-    { value: 'adjustment', label: 'Adjustment' }
+    { value: 'all', label: t('transaction.list.allTypes') },
+    { value: 'purchase', label: t('breadcrumb.purchase') },
+    { value: 'sale', label: t('breadcrumb.sale') },
+    { value: 'adjustment', label: t('breadcrumb.adjustment') }
   ]
 
   return (
@@ -271,7 +272,7 @@ export default function TransactionList() {
       {/* Header */}
       <div className="p-6 pb-3">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">Transaction List</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('transaction.list.title')}</h1>
         </div>
       </div>
 
@@ -285,7 +286,7 @@ export default function TransactionList() {
               <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
                 <div className="flex-1 min-w-0">
                   <Search
-                    placeholder="Search transactions"
+                    placeholder={t('transaction.list.searchPlaceholder')}
                     value={searchTerm}
                     onChange={handleSearch}
                     onClear={handleClearSearch}
@@ -294,9 +295,9 @@ export default function TransactionList() {
                 </div>
                 {/* Results Info */}
                 <div className="text-sm text-gray-600">
-                  Showing {transactions.length} of {pagination.totalItems} results
+                  {t('transaction.list.showingResults', { count: transactions.length, total: pagination.totalItems })}
                   {pagination.hasNext && (
-                    <span className="text-blue-600 ml-2">• Scroll to load more</span>
+                    <span className="text-blue-600 ml-2">{t('transaction.list.scrollToLoadMore')}</span>
                   )}
                 </div>
               </div>
@@ -334,7 +335,7 @@ export default function TransactionList() {
               columns={columns}
               data={transactions}
               loading={loading}
-              emptyMessage={searchTerm || filters.type !== 'all' ? 'No matching transactions' : 'No transactions'}
+              emptyMessage={searchTerm || filters.type !== 'all' ? t('transaction.list.noMatchingTransactions') : t('transaction.list.noTransactions')}
               className="min-h-[400px]"
               sortConfig={sortConfig}
               onSort={handleSort}
@@ -346,9 +347,9 @@ export default function TransactionList() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-gray-600">
-                          <th className="text-left font-medium pb-2">Product</th>
-                          <th className="text-right font-medium pb-2">Qty</th>
-                          <th className="text-left font-medium pb-2">Unit</th>
+                          <th className="text-left font-medium pb-2">{t('transaction.list.tableHeaders.product')}</th>
+                          <th className="text-right font-medium pb-2">{t('transaction.list.tableHeaders.qty')}</th>
+                          <th className="text-left font-medium pb-2">{t('transaction.list.tableHeaders.unit')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -369,14 +370,14 @@ export default function TransactionList() {
             {/* Loading more indicator */}
             {loadingMore && (
               <div className="flex justify-center items-center py-4">
-                <div className="text-sm text-gray-500">Loading more transactions...</div>
+                <div className="text-sm text-gray-500">{t('transaction.list.loadingMore')}</div>
               </div>
             )}
             
             {/* Scroll indicator */}
             {pagination.hasNext && !loadingMore && (
               <div className="text-xs text-gray-400 p-2 text-center">
-                Scroll to bottom to load more
+                {t('transaction.list.scrollToLoadMore')}
               </div>
             )}
           </div>

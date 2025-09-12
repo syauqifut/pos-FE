@@ -175,7 +175,7 @@ export default function ProductForm({ mode, productId }: ProductFormProps) {
 
   if (mode === 'edit' && detailLoading) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <div className="flex justify-center items-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -188,7 +188,7 @@ export default function ProductForm({ mode, productId }: ProductFormProps) {
 
   if (mode === 'edit' && detailError) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <Alert variant="error" className="mb-4">
           {detailError}
         </Alert>
@@ -201,14 +201,14 @@ export default function ProductForm({ mode, productId }: ProductFormProps) {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           {mode === 'create' ? t('product.createTitle') : t('product.editTitle')}
         </h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
+      <div className="bg-white rounded-lg shadow p-3 max-w-2xl">
         <div className="mb-6">
           <Button variant="outline" onClick={handleCancel}>
             <ArrowLeft className="w-4 h-4 mr-2" />
