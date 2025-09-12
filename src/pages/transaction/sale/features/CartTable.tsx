@@ -71,8 +71,8 @@ function CartTableRow({
   const unitOptions = React.useMemo(() => {
     if (conversions && conversions.length > 0) {
       return conversions.map((conversion: any) => ({
-        id: conversion.to_unit_id,
-        name: conversion.to_unit
+        id: conversion.unit_id,
+        name: conversion.unit
       }));
     }
     
@@ -89,7 +89,7 @@ function CartTableRow({
   // Get conversion info for current unit
   const conversionInfo = React.useMemo(() => {
     if (!item.unit_id || !conversions) return null;
-    return conversions.find((conv: any) => conv.to_unit_id === item.unit_id);
+    return conversions.find((conv: any) => conv.unit_id === item.unit_id);
   }, [item.unit_id, conversions]);
 
   // Ensure we have a valid unit_id
@@ -98,8 +98,8 @@ function CartTableRow({
       const firstUnit = conversions[0];
       onUpdateItem(index, {
         ...item,
-        unit_id: firstUnit.to_unit_id,
-        unit_name: firstUnit.to_unit,
+        unit_id: firstUnit.unit_id,
+        unit_name: firstUnit.unit,
         price: firstUnit.price,
         subtotal: firstUnit.price * item.qty
       });
@@ -109,13 +109,13 @@ function CartTableRow({
   // Validate that current unit_id is still valid
   React.useEffect(() => {
     if (conversions.length > 0 && item.unit_id) {
-      const isValidUnit = conversions.some((conv: any) => conv.to_unit_id === item.unit_id);
+      const isValidUnit = conversions.some((conv: any) => conv.unit_id === item.unit_id);
       if (!isValidUnit) {
         const firstUnit = conversions[0];
         onUpdateItem(index, {
           ...item,
-          unit_id: firstUnit.to_unit_id,
-          unit_name: firstUnit.to_unit,
+          unit_id: firstUnit.unit_id,
+          unit_name: firstUnit.unit,
           price: firstUnit.price,
           subtotal: firstUnit.price * item.qty
         });
@@ -130,7 +130,7 @@ function CartTableRow({
       await loadConversions();
     }
     
-    const newConversion = conversions.find((conv: any) => conv.to_unit_id === unit.id);
+    const newConversion = conversions.find((conv: any) => conv.unit_id === unit.id);
     let newPrice = 0;
     
     if (newConversion) {
@@ -194,7 +194,7 @@ function CartTableRow({
           <Tooltip 
             content={
               conversionInfo 
-                ? `1 ${conversionInfo.to_unit} = ${conversionInfo.qty} ${conversionInfo.from_unit}` 
+                ? `1 ${conversionInfo.unit} = ${conversionInfo.qty} unit dasar` 
                 : `${item.unit_name || 'unit'} = ${item.unit_name || 'unit'}`
             } 
             position="left"

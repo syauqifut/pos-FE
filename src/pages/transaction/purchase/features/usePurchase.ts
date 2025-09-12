@@ -29,10 +29,8 @@ export interface Option {
 
 export interface ProductConversion {
   id: number;
-  from_unit_id: number;
-  to_unit_id: number;
-  from_unit: string;
-  to_unit: string;
+  unit_id: number;
+  unit: string;
   qty: number;
   price: number;
   is_default: boolean;

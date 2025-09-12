@@ -225,8 +225,8 @@ export default function SaleFormComponent() {
     const newItem: SaleItem = {
       product_id: product.product_id,
       product_name: product.product_name,
-      unit_id: defaultConversion.to_unit_id,
-      unit_name: defaultConversion.to_unit,
+      unit_id: defaultConversion.unit_id,
+      unit_name: defaultConversion.unit,
       qty: 1,
       price: defaultConversion.price,
       subtotal: defaultConversion.price,

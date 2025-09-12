@@ -73,8 +73,8 @@ function PurchaseItemRow({
     }
     
     return productConversions.map(conversion => ({
-      id: conversion.to_unit_id, // Use to_unit_id instead of conversion.id
-      name: conversion.to_unit
+      id: conversion.unit_id,
+      name: conversion.unit
     }));
   }, [value.product_id, productConversions]);
 
@@ -95,8 +95,8 @@ function PurchaseItemRow({
         console.log('Auto-selecting default unit:', defaultConversion);
         onChange({
           ...value,
-          unit_id: defaultConversion.to_unit_id,
-          unit_name: defaultConversion.to_unit,
+          unit_id: defaultConversion.unit_id,
+          unit_name: defaultConversion.unit,
           price: defaultConversion.price
         });
       } else if (productConversions.length > 0) {
@@ -105,8 +105,8 @@ function PurchaseItemRow({
         console.log('Auto-selecting first unit:', firstConversion);
         onChange({
           ...value,
-          unit_id: firstConversion.to_unit_id,
-          unit_name: firstConversion.to_unit,
+          unit_id: firstConversion.unit_id,
+          unit_name: firstConversion.unit,
           price: firstConversion.price
         });
       }
@@ -114,12 +114,12 @@ function PurchaseItemRow({
     
     // Also handle case where unit_id exists but unit_name is missing (from draft)
     if (value.product_id && productConversions.length > 0 && value.unit_id && !value.unit_name) {
-      const matchingConversion = productConversions.find(c => c.to_unit_id === value.unit_id);
+      const matchingConversion = productConversions.find(c => c.unit_id === value.unit_id);
       if (matchingConversion) {
         console.log('Restoring unit name from conversion:', matchingConversion);
         onChange({
           ...value,
-          unit_name: matchingConversion.to_unit,
+          unit_name: matchingConversion.unit,
           price: matchingConversion.price
         });
       }
@@ -312,7 +312,7 @@ function PurchaseItemRow({
     console.log('Unit change triggered:', unit); // Debug log
     if (unit) {
       // Find the corresponding conversion to get the price
-      const conversion = productConversions.find(c => c.to_unit_id === unit.id);
+      const conversion = productConversions.find(c => c.unit_id === unit.id);
       const unitPrice = conversion?.price || 0;
       
       const updatedItem = {
@@ -467,7 +467,7 @@ function PurchaseItemRow({
 export default function PurchaseForm() {
   const navigate = useNavigate();
   const { loading: formLoading, error: formError, success: formSuccess, setError, setSuccess, createPurchase } = usePurchaseForm();
-  const { productOptions, loading: productLoading, fetchFilteredProducts } = useProductOptions();
+  const { loading: productLoading, fetchFilteredProducts } = useProductOptions();
   const { categoryOptions, loading: categoryLoading } = useCategoryOptions();
   const { manufacturerOptions, loading: manufacturerLoading } = useManufacturerOptions();
   const { formData, updateFormData, clearDraft, isLoading: draftLoading } = usePurchaseFormDraft();
@@ -858,17 +858,39 @@ export default function PurchaseForm() {
     }
   }, [dataLoading, formData.items.length]);
 
-  // Ensure proper filtering when draft is loaded and options are available
+  // Load initial product options when component mounts and data is ready
   useEffect(() => {
-    if (!draftLoading && !categoryLoading && !manufacturerLoading && formData.items.length > 0) {
-      // Force update product options for all rows to ensure proper filtering
+    console.log('useEffect triggered - dataLoading:', dataLoading, 'formData.items.length:', formData.items.length);
+    
+    if (!dataLoading && formData.items.length > 0) {
+      console.log('Component ready, loading product options for all rows');
+      
+      // Load all products for each row initially
       formData.items.forEach((item, index) => {
-        setTimeout(() => {
-          updateProductOptionsForRow(index, item.category_id, item.manufacturer_id);
-        }, 100 * index); // Stagger the updates to avoid conflicts
+        console.log(`Loading product options for row ${index}`);
+        updateProductOptionsForRow(index, item.category_id, item.manufacturer_id);
       });
     }
-  }, [draftLoading, categoryLoading, manufacturerLoading, formData.items.length, updateProductOptionsForRow]);
+  }, [dataLoading, formData.items.length, updateProductOptionsForRow]);
+
+  // Load initial product options for all rows when component mounts
+  useEffect(() => {
+    if (!dataLoading && formData.items.length > 0) {
+      console.log('Component mounted, loading product options for all rows');
+      console.log('Current productOptionsByRow:', productOptionsByRow);
+      console.log('formData.items:', formData.items);
+      
+      // Load all products for each row initially
+      formData.items.forEach((item, index) => {
+        if (!productOptionsByRow[index] || productOptionsByRow[index].length === 0) {
+          console.log(`Loading initial product options for row ${index}`);
+          updateProductOptionsForRow(index, item.category_id, item.manufacturer_id);
+        } else {
+          console.log(`Row ${index} already has product options:`, productOptionsByRow[index].length);
+        }
+      });
+    }
+  }, [dataLoading, formData.items.length, productOptionsByRow, updateProductOptionsForRow]);
 
   // Auto-fetch product conversions for existing items when draft is loaded
   useEffect(() => {
@@ -882,17 +904,6 @@ export default function PurchaseForm() {
       });
     }
   }, [draftLoading, formData.items]);
-
-  // Initialize productOptions for existing rows when productOptions are loaded
-  useEffect(() => {
-    if (productOptions && productOptions.length > 0) {
-      formData.items.forEach((item, index) => {
-        // Always update product options for each row to ensure proper filtering
-        // This is especially important when draft data is loaded
-        updateProductOptionsForRow(index, item.category_id, item.manufacturer_id);
-      });
-    }
-  }, [productOptions, formData.items, updateProductOptionsForRow]);
 
   // Show loading state while initial data is being fetched
   if (dataLoading) {
