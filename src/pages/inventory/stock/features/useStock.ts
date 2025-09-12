@@ -40,10 +40,13 @@ export interface StockTransaction {
 interface UseStockReturn {
   stocks: Stock[];
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
+  hasMore: boolean;
   refreshStocks: () => Promise<void>;
   searchStocks: (searchTerm: string) => Promise<void>;
   sortStocks: (sortKey: string, sortDirection: 'asc' | 'desc') => Promise<void>;
+  loadMore: () => Promise<void>;
 }
 
 interface UseStockDetailReturn {
@@ -59,12 +62,16 @@ interface UseStockDetailReturn {
 export function useStock(): UseStockReturn {
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [_currentSearch, setCurrentSearch] = useState('');
   const [currentSort, setCurrentSort] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const fetchStocks = async (searchTerm: string = '', sortConfig: { key: string; direction: 'asc' | 'desc' } | null = null) => {
+  const fetchStocks = async (searchTerm: string = '', sortConfig: { key: string; direction: 'asc' | 'desc' } | null = null, page: number = 1, append: boolean = false) => {
     // Cancel previous request if it exists
     if (abortController) {
       abortController.abort();
@@ -75,7 +82,11 @@ export function useStock(): UseStockReturn {
     setAbortController(newAbortController);
     
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       // Build query parameters
@@ -102,16 +113,58 @@ export function useStock(): UseStockReturn {
         params.append('sort_order', sortConfig.direction);
       }
       
+      // Add pagination parameters
+      params.append('page', page.toString());
+      params.append('limit', '10'); // Load 10 items per page
+      
       try {
         const queryString = params.toString();
         const url = `/api/inventory/stock${queryString ? `?${queryString}` : ''}`;
       
-        const response = await apiGet<{ success: boolean; data: Stock[]; message?: string }>(
+        const response = await apiGet<{ 
+          success: boolean; 
+          data: Stock[]; 
+          pagination: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+          };
+          message?: string 
+        }>(
           url,
           { signal: newAbortController.signal }
         );
         
-        setStocks(response.data || []);
+        console.log('API Response:', {
+          success: response.success,
+          dataLength: response.data?.length,
+          pagination: response.pagination,
+          hasPagination: !!response.pagination
+        });
+        
+        if (append) {
+          setStocks(prev => [...prev, ...(response.data || [])]);
+          setCurrentPage(page); // Update current page when appending
+        } else {
+          setStocks(response.data || []);
+          setCurrentPage(page);
+        }
+        
+        if (response.pagination) {
+          console.log('Pagination data:', response.pagination);
+          const currentPage = response.pagination.page;
+          const totalPages = response.pagination.totalPages;
+          
+          setTotalPages(totalPages);
+          setHasMore(currentPage < totalPages);
+          console.log('Pagination processed - currentPage:', currentPage, 'totalPages:', totalPages, 'hasMore:', currentPage < totalPages);
+        } else {
+          // Fallback: if no pagination data, check if we got a full page
+          const gotFullPage = response.data && response.data.length === 10;
+          console.log('No pagination data, using fallback logic - gotFullPage:', gotFullPage, 'dataLength:', response.data?.length);
+          setHasMore(gotFullPage);
+        }
       } catch (err: any) {
         const message = err?.message || err || 'Failed to fetch stock data'
         console.error('coba error:', message);
@@ -125,7 +178,11 @@ export function useStock(): UseStockReturn {
       setError('Failed to fetch stock data');
       console.error('Error fetching stocks:', err);
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
       // Clear abort controller if it's still the current one
       if (abortController === newAbortController) {
         setAbortController(null);
@@ -136,22 +193,66 @@ export function useStock(): UseStockReturn {
   const refreshStocks = async () => {
     setCurrentSearch('');
     setCurrentSort(null);
-    await fetchStocks('', null);
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchStocks('', null, 1, false);
   };
 
   const searchStocks = async (searchTerm: string) => {
     setCurrentSearch(searchTerm);
-    await fetchStocks(searchTerm, currentSort);
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchStocks(searchTerm, currentSort, 1, false);
   };
 
   const sortStocks = async (sortKey: string, sortDirection: 'asc' | 'desc') => {
     const newSortConfig = { key: sortKey, direction: sortDirection };
     setCurrentSort(newSortConfig);
-    await fetchStocks(_currentSearch, newSortConfig);
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchStocks(_currentSearch, newSortConfig, 1, false);
+  };
+
+  const loadMore = async () => {
+    console.log('loadMore called - hasMore:', hasMore, 'loadingMore:', loadingMore, 'currentPage:', currentPage);
+    if (!hasMore || loadingMore) {
+      console.log('Cannot load more:', { hasMore, loadingMore });
+      return;
+    }
+    
+    const nextPage = currentPage + 1;
+    console.log('Loading page:', nextPage);
+    
+    // Set loading state immediately to prevent multiple calls
+    setLoadingMore(true);
+    
+    try {
+      // Don't update currentPage here, just fetch with append
+      await fetchStocks(_currentSearch, currentSort, nextPage, true);
+    } catch (error) {
+      console.error('Error in loadMore:', error);
+      // Reset loading state on error
+      setLoadingMore(false);
+    }
   };
 
   useEffect(() => {
-    fetchStocks();
+    // Initial load - fetch first 3 pages to show more than 10 items initially
+    const initialLoad = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch first 3 pages sequentially
+        await fetchStocks('', null, 1, false);
+        await fetchStocks('', null, 2, true);
+        await fetchStocks('', null, 3, true);
+      } catch (error) {
+        console.error('Error in initial load:', error);
+      }
+    };
+    
+    initialLoad();
     
     // Cleanup function to abort any pending requests
     return () => {
@@ -164,10 +265,13 @@ export function useStock(): UseStockReturn {
   return {
     stocks,
     loading,
+    loadingMore,
     error,
+    hasMore,
     refreshStocks,
     searchStocks,
-    sortStocks
+    sortStocks,
+    loadMore
   };
 }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table } from '../../../../components/ui/Table/Table';
 import { TableColumn, SortConfig } from '../../../../types/table';
@@ -6,14 +6,20 @@ import Button from '../../../../components/ui/Button/Button';
 import Alert from '../../../../components/ui/Alert/Alert';
 import Search from '../../../../components/ui/Search/Search';
 import { useStock, Stock } from '../features/useStock';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import { t } from '../../../../utils/i18n';
 
 export default function StockList() {
   const navigate = useNavigate();
-  const { stocks, loading, error, refreshStocks, searchStocks, sortStocks } = useStock();
+  const { stocks, loading, loadingMore, error, hasMore, refreshStocks, searchStocks, sortStocks, loadMore } = useStock();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig | undefined>();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('StockList render - stocks count:', stocks.length, 'hasMore:', hasMore, 'loading:', loading, 'loadingMore:', loadingMore);
+  }, [stocks.length, hasMore, loading, loadingMore]);
 
   // Handle search immediately
   const handleSearch = async (value: string) => {
@@ -43,6 +49,25 @@ export default function StockList() {
     navigate(`/inventory/stock/${stock.product_id}`);
   };
 
+  // Lazy loading with scroll detection - using the same pattern as transaction list
+  const handleScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+    
+    // Check if scrolled near bottom (within 150px) - increased threshold for better detection
+    if (scrollHeight - scrollTop <= clientHeight + 150 && hasMore && !loadingMore && !loading) {
+      console.log('Scroll triggered load more!', { 
+        scrollTop, 
+        scrollHeight, 
+        clientHeight, 
+        threshold: scrollHeight - scrollTop - clientHeight,
+        hasMore,
+        loadingMore,
+        loading
+      })
+      await loadMore()
+    }
+  }, [hasMore, loadingMore, loading, loadMore])
+
   const columns: TableColumn<Stock>[] = [
     {
       header: t('inventory.stock.no'),
@@ -50,12 +75,6 @@ export default function StockList() {
       width: 80,
       align: 'center',
       render: (_: any, _stock: Stock, index: number) => index + 1
-    },
-    {
-      header: t('inventory.stock.productCode'),
-      key: 'product_code',
-      align: 'left',
-      sortable: true
     },
     {
       header: t('inventory.stock.productName'),
@@ -85,21 +104,6 @@ export default function StockList() {
         </span>
       )
     },
-    {
-      header: t('inventory.stock.lastUpdated'),
-      key: 'last_updated_at',
-      align: 'right',
-      render: (value: any) => {
-        if (!value) return null;
-        return new Date(value).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
-    }
   ];
 
   return (
@@ -140,7 +144,11 @@ export default function StockList() {
           </div>
         </div>
 
-        <div className="overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          className="overflow-auto max-h-[600px]"
+          onScroll={handleScroll}
+        >
           <Table
             columns={columns}
             data={stocks}
@@ -151,6 +159,24 @@ export default function StockList() {
             onSort={handleSort}
             onRowClick={handleRowClick}
           />
+          
+          {/* Loading More Indicator */}
+          {loadingMore && (
+            <div className="p-4 text-center text-gray-500">
+              <div className="inline-flex items-center">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <span className="text-sm">{t('common.loading')}</span>
+              </div>
+            </div>
+          )}
+          
+          
+          {/* End of Results Indicator */}
+          {!hasMore && stocks.length > 0 && !loading && (
+            <div className="p-4 text-center text-gray-400 text-sm">
+              {t('common.noMoreData')}
+            </div>
+          )}
         </div>
       </div>
     </div>
