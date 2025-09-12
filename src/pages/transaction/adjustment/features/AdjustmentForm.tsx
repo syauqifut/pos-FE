@@ -4,11 +4,12 @@ import { Save, Plus, Trash2, Copy } from 'lucide-react';
 import Button from '../../../../components/ui/Button/Button';
 import Input from '../../../../components/ui/Input/Input';
 import Select from '../../../../components/ui/Select/Select';
-import Combobox from '../../../../components/ui/Combobox/Combobox';
+import LazyCombobox from '../../../../components/ui/LazyCombobox/LazyCombobox';
 import Alert from '../../../../components/ui/Alert/Alert';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog/ConfirmDialog';
 import { t } from '../../../../utils/i18n';
 import { apiGet } from '../../../../utils/apiClient';
+import { useLazyAdjustmentProductOptions } from '../../../../hooks/useLazyProductOptions';
 import {
   AdjustmentItem,
   ProductOption,
@@ -35,6 +36,17 @@ interface AdjustmentItemRowProps {
   onCheckChange?: (checked: boolean) => void;
   fieldErrors?: { [key: string]: boolean };
   index: number;
+  onLazyLoadProducts: (params: {
+    search?: string;
+    page: number;
+    limit: number;
+    category_id?: number | null;
+    manufacturer_id?: number | null;
+  }) => Promise<{
+    data: any[];
+    hasMore: boolean;
+    total: number;
+  }>;
 }
 
 // Adjustment Item Row Component
@@ -52,7 +64,8 @@ function AdjustmentItemRow({
   checked = false,
   onCheckChange,
   fieldErrors = {},
-  index
+  index,
+  onLazyLoadProducts
 }: AdjustmentItemRowProps) {
   // Safety check for value prop
   if (!value) {
@@ -130,11 +143,6 @@ function AdjustmentItemRow({
 
   // Get selected product IDs from other rows to filter out duplicates
   const selectedProductIdsFromOtherRows = getSelectedProductIds(index);
-  
-  // Filter product options to exclude already selected products in other rows
-  const availableProductOptions = productOptions.filter(product => 
-    !selectedProductIdsFromOtherRows.includes(product.product_id)
-  );
 
   // Find selected options with safety checks
   const selectedProduct = productOptions?.find(p => p.product_id === value.product_id) || null;
@@ -144,9 +152,7 @@ function AdjustmentItemRow({
 
   // Debug logs for data
   console.log(`Row ${index} - Product options received:`, productOptions.length);
-  console.log(`Row ${index} - Available product options:`, availableProductOptions.length);
   console.log(`Row ${index} - Selected product IDs from other rows:`, selectedProductIdsFromOtherRows);
-  console.log(`Row ${index} - First product option structure:`, availableProductOptions[0]);
   console.log(`Row ${index} - Category options:`, categoryOptions);
   console.log(`Row ${index} - Selected category:`, selectedCategory);
   console.log(`Row ${index} - Manufacturer options:`, manufacturerOptions);
@@ -160,23 +166,15 @@ function AdjustmentItemRow({
     name: selectedProduct.product_name
   } : null;
 
-  const mappedAvailableProductOptions = availableProductOptions.map(product => ({
-    id: product.product_id,
-    name: product.product_name
-  }));
-
   // Handle product selection
   const handleProductChange = async (product: any) => {
-    // Find the original ProductOption from the mapped product
-    const typedProduct = product ? productOptions.find(p => p.product_id === product.id) : null;
-    
-    if (typedProduct) {
-      console.log('Selected product:', typedProduct); // Debug log
-      console.log('Product category_id:', typedProduct.category_id, 'manufacturer_id:', typedProduct.manufacturer_id); // Debug log
+    if (product) {
+      console.log('Selected product:', product); // Debug log
+      console.log('Product category_id:', product.category_id, 'manufacturer_id:', product.manufacturer_id); // Debug log
       
       // Ensure we have valid category_id and manufacturer_id
-      let newCategoryId: number | null = typedProduct.category_id;
-      let newManufacturerId: number | null = typedProduct.manufacturer_id;
+      let newCategoryId: number | null = product.category_id;
+      let newManufacturerId: number | null = product.manufacturer_id;
       
       // If category_id or manufacturer_id is 0 or null, try to find the product in categoryOptions and manufacturerOptions
       if (!newCategoryId || newCategoryId === 0) {
@@ -216,19 +214,19 @@ function AdjustmentItemRow({
       
       // Get default stock value (0 if no stock units available)
       let defaultStock = 0;
-      if (typedProduct.stock && typedProduct.stock.length > 0) {
-        const defaultStockUnit = typedProduct.stock.find(unit => unit.is_default);
+      if (product.stock && product.stock.length > 0) {
+        const defaultStockUnit = product.stock.find((unit: any) => unit.is_default);
         if (defaultStockUnit) {
           defaultStock = defaultStockUnit.stock;
         } else {
-          defaultStock = typedProduct.stock[0].stock;
+          defaultStock = product.stock[0].stock;
         }
       }
       
       // First, update the item with new product and reset unit
       const updatedItem = {
         ...value,
-        product_id: typedProduct.product_id,
+        product_id: product.product_id || product.id,
         category_id: newCategoryId, // Auto-select category from product
         manufacturer_id: newManufacturerId, // Auto-select manufacturer from product
         unit_id: null, // Reset unit selection
@@ -423,13 +421,17 @@ function AdjustmentItemRow({
       {/* Product */}
       <td className="p-2 md:p-3 relative" style={{width: '200px', minWidth: '200px', maxWidth: '200px'}} onClick={(e) => e.stopPropagation()}>
         <div className={fieldErrors[`item_${index}_product`] ? '[&_button]:border-red-500' : ''}>
-          <Combobox
+          <LazyCombobox
             value={mappedSelectedProduct}
             onChange={handleProductChange}
-            options={mappedAvailableProductOptions}
+            onLoadOptions={onLazyLoadProducts}
+            categoryId={value.category_id}
+            manufacturerId={value.manufacturer_id}
             placeholder={t('adjustment.selectProduct')}
             searchPlaceholder={t('adjustment.searchProduct')}
             loading={loading}
+            pageSize={20}
+            minSearchLength={0}
           />
         </div>
       </td>
@@ -529,6 +531,7 @@ export default function AdjustmentForm() {
   const { categoryOptions, loading: categoryLoading } = useCategoryOptions();
   const { manufacturerOptions, loading: manufacturerLoading } = useManufacturerOptions();
   const { formData, updateFormData, clearDraft, isLoading: draftLoading } = useAdjustmentFormDraft();
+  const { loadOptions: loadLazyProducts } = useLazyAdjustmentProductOptions();
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({});
   const [checkedItems, setCheckedItems] = useState<{ [key: number]: boolean }>({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -1122,6 +1125,7 @@ export default function AdjustmentForm() {
                           onCheckChange={(checked) => handleCheckboxChange(index, checked)}
                           fieldErrors={fieldErrors}
                           index={index}
+                          onLazyLoadProducts={loadLazyProducts}
                         />
                       ))}
                     </tbody>

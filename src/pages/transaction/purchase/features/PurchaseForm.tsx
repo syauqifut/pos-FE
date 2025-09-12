@@ -4,11 +4,12 @@ import { Save, Plus, Trash2, Copy } from 'lucide-react';
 import Button from '../../../../components/ui/Button/Button';
 import Input from '../../../../components/ui/Input/Input';
 import Select from '../../../../components/ui/Select/Select';
-import Combobox from '../../../../components/ui/Combobox/Combobox';
+import LazyCombobox from '../../../../components/ui/LazyCombobox/LazyCombobox';
 import Alert from '../../../../components/ui/Alert/Alert';
 import ConfirmDialog from '../../../../components/ui/ConfirmDialog/ConfirmDialog';
 import { t } from '../../../../utils/i18n';
 import { apiGet } from '../../../../utils/apiClient';
+import { useLazyPurchaseProductOptions } from '../../../../hooks/useLazyProductOptions';
 import {
   PurchaseItem,
   ProductOption,
@@ -33,12 +34,22 @@ interface PurchaseItemRowProps {
   onFilterProducts: (category_id: number | null, manufacturer_id: number | null) => void;
   onUpdateProductOptions: (category_id: number | null, manufacturer_id: number | null) => Promise<void>;
   onDuplicate: () => void;
-  getSelectedProductIds: (excludeIndex: number) => number[];
   loading?: boolean;
   checked?: boolean;
   onCheckChange?: (checked: boolean) => void;
   fieldErrors?: { [key: string]: boolean };
   index: number;
+  onLazyLoadProducts: (params: {
+    search?: string;
+    page: number;
+    limit: number;
+    category_id?: number | null;
+    manufacturer_id?: number | null;
+  }) => Promise<{
+    data: any[];
+    hasMore: boolean;
+    total: number;
+  }>;
 }
 
 // Purchase Item Row Component
@@ -54,12 +65,12 @@ function PurchaseItemRow({
   onFilterProducts,
   onUpdateProductOptions,
   onDuplicate,
-  getSelectedProductIds,
   loading = false,
   checked = false,
   onCheckChange,
   fieldErrors = {},
-  index
+  index,
+  onLazyLoadProducts
 }: PurchaseItemRowProps) {
   // Safety check for value prop
   if (!value) {
@@ -126,14 +137,6 @@ function PurchaseItemRow({
     }
   }, [productConversions, value.product_id, value.unit_id, value.unit_name, onChange, value]);
 
-  // Get selected product IDs from other rows to filter out duplicates
-  const selectedProductIdsFromOtherRows = getSelectedProductIds(index);
-  
-  // Filter product options to exclude already selected products in other rows
-  const availableProductOptions = productOptions.filter(product => 
-    !selectedProductIdsFromOtherRows.includes(product.id)
-  );
-
   // Find selected options with safety checks
   const selectedProduct = productOptions?.find(p => p.id === value.product_id) || null;
   const selectedCategory = categoryOptions?.find(c => c.id === value.category_id) || null;
@@ -150,14 +153,13 @@ function PurchaseItemRow({
 
   // Handle product selection
   const handleProductChange = async (product: any) => {
-    const typedProduct = product as ProductOption | null;
-    if (typedProduct) {
-      console.log('Selected product:', typedProduct); // Debug log
-      console.log('Product category_id:', typedProduct.category_id, 'manufacturer_id:', typedProduct.manufacturer_id); // Debug log
+    if (product) {
+      console.log('Selected product:', product); // Debug log
+      console.log('Product category_id:', product.category_id, 'manufacturer_id:', product.manufacturer_id); // Debug log
       
       // Ensure we have valid category_id and manufacturer_id
-      let newCategoryId: number | null = typedProduct.category_id;
-      let newManufacturerId: number | null = typedProduct.manufacturer_id;
+      let newCategoryId: number | null = product.category_id;
+      let newManufacturerId: number | null = product.manufacturer_id;
       
       // If category_id or manufacturer_id is 0 or null, try to find the product in categoryOptions and manufacturerOptions
       if (!newCategoryId || newCategoryId === 0) {
@@ -198,7 +200,7 @@ function PurchaseItemRow({
       // First, update the item with new product and reset unit
       const updatedItem = {
         ...value,
-        product_id: typedProduct.id,
+        product_id: product.id,
         category_id: newCategoryId, // Auto-select category from product
         manufacturer_id: newManufacturerId, // Auto-select manufacturer from product
         unit_id: null, // Reset unit selection
@@ -211,7 +213,7 @@ function PurchaseItemRow({
       
       // Then fetch product conversions for this product
       // This will trigger the auto-select effect when conversions are loaded
-      onProductConversionsUpdate(typedProduct.id);
+      onProductConversionsUpdate(product.id);
     } else {
       console.log('Clearing product selection'); // Debug log
       // Clear product and all related fields
@@ -365,13 +367,17 @@ function PurchaseItemRow({
       {/* Product */}
       <td className="p-2 relative w-64" onClick={(e) => e.stopPropagation()}>
         <div className={fieldErrors[`item_${index}_product`] ? '[&_button]:border-red-500' : ''}>
-          <Combobox
-            value={selectedProduct}
+          <LazyCombobox
+            value={selectedProduct ? { id: selectedProduct.id, name: selectedProduct.name } : null}
             onChange={handleProductChange}
-            options={Array.isArray(availableProductOptions) ? availableProductOptions.filter(opt => opt && typeof opt.id === 'number' && typeof opt.name === 'string') : []}
+            onLoadOptions={onLazyLoadProducts}
+            categoryId={value.category_id}
+            manufacturerId={value.manufacturer_id}
             placeholder={t('purchase.selectProduct')}
             searchPlaceholder={t('purchase.searchProduct')}
             loading={loading}
+            pageSize={20}
+            minSearchLength={0}
           />
         </div>
       </td>
@@ -471,6 +477,7 @@ export default function PurchaseForm() {
   const { categoryOptions, loading: categoryLoading } = useCategoryOptions();
   const { manufacturerOptions, loading: manufacturerLoading } = useManufacturerOptions();
   const { formData, updateFormData, clearDraft, isLoading: draftLoading } = usePurchaseFormDraft();
+  const { loadOptions: loadLazyProducts } = useLazyPurchaseProductOptions();
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: boolean }>({});
   const [checkedItems, setCheckedItems] = useState<{ [key: number]: boolean }>({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -481,13 +488,6 @@ export default function PurchaseForm() {
   // Product options per row (for filtered products)
   const [productOptionsByRow, setProductOptionsByRow] = useState<{ [key: number]: ProductOption[] }>({});
 
-  // Get selected product IDs from other rows (for validation)
-  const getSelectedProductIds = useCallback((excludeIndex: number): number[] => {
-    return formData.items
-      .map((item, index) => ({ productId: item.product_id, index }))
-      .filter(({ productId, index }) => productId !== null && index !== excludeIndex)
-      .map(({ productId }) => productId as number);
-  }, [formData.items]);
 
   // Function to fetch product conversions for a specific row
   const fetchProductConversionsForRow = async (rowIndex: number, productId: number) => {
@@ -543,34 +543,41 @@ export default function PurchaseForm() {
       }
       
       const queryString = params.toString();
-      const url = `/api/inventory/stock/product${queryString ? `?${queryString}` : ''}`;
+      const url = `/api/inventory/stock/product/units${queryString ? `?${queryString}` : ''}`;
       
       console.log(`Fetching products for row ${rowIndex} with URL:`, url);
       
       const response = await apiGet<{ 
         success: boolean; 
-        data: { 
-          data: Array<{
-            product_id: number;
-            product_name: string;
-            category_id: number | null;
-            manufacturer_id: number | null;
-            unit_id?: number;
-            unit_name?: string;
-          }>; 
-        }; 
+        data: Array<{
+          product_id: number;
+          product_name: string;
+          sku: string | null;
+          barcode: string | null;
+          image_url: string | null;
+          category_name: string | null;
+          category_id: number | null;
+          manufacturer_name: string | null;
+          manufacturer_id: number | null;
+          stock: Array<{
+            unit_id: number;
+            unit_name: string;
+            stock: number;
+            is_default: boolean;
+          }>;
+        }>; 
         message?: string 
       }>(url);
       
-      if (response.success && response.data?.data) {
-        console.log(`Row ${rowIndex} - API Response:`, response.data.data);
+      if (response.success && response.data) {
+        console.log(`Row ${rowIndex} - API Response:`, response.data);
         
-        const transformedProducts: ProductOption[] = response.data.data.map(product => {
+        const transformedProducts: ProductOption[] = response.data.map(product => {
           return {
             id: product.product_id,
             name: product.product_name,
-            unit_id: product.unit_id || 1,
-            unit_name: product.unit_name || 'pcs',
+            unit_id: product.stock?.[0]?.unit_id || 1,
+            unit_name: product.stock?.[0]?.unit_name || 'pcs',
             category_id: product.category_id || 0,
             manufacturer_id: product.manufacturer_id || 0
           };
@@ -1082,12 +1089,12 @@ export default function PurchaseForm() {
                           onFilterProducts={fetchFilteredProducts}
                           onUpdateProductOptions={(category_id, manufacturer_id) => updateProductOptionsForRow(index, category_id, manufacturer_id)}
                           onDuplicate={() => handleDuplicateItem(index)}
-                          getSelectedProductIds={getSelectedProductIds}
                           loading={productLoading}
                           checked={checkedItems[index] || false}
                           onCheckChange={(checked) => handleCheckboxChange(index, checked)}
                           fieldErrors={fieldErrors}
                           index={index}
+                          onLazyLoadProducts={loadLazyProducts}
                         />
                       ))}
                     </tbody>

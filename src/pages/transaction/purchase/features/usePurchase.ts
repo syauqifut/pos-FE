@@ -135,37 +135,44 @@ export function useProductOptions(): UseProductOptionsReturn {
       }
       
       const queryString = params.toString();
-      const url = `/api/inventory/stock/product${queryString ? `?${queryString}` : ''}`;
+      const url = `/api/inventory/stock/product/units${queryString ? `?${queryString}` : ''}`;
       
       console.log('Fetching products with URL:', url); // Debug log
       
       const response = await apiGet<{ 
         success: boolean; 
-        data: { 
-          data: Array<{
-            product_id: number;
-            product_name: string;
-            category_id: number | null;
-            manufacturer_id: number | null;
-            unit_id?: number;
-            unit_name?: string;
-          }>; 
-        }; 
+        data: Array<{
+          product_id: number;
+          product_name: string;
+          sku: string | null;
+          barcode: string | null;
+          image_url: string | null;
+          category_name: string | null;
+          category_id: number | null;
+          manufacturer_name: string | null;
+          manufacturer_id: number | null;
+          stock: Array<{
+            unit_id: number;
+            unit_name: string;
+            stock: number;
+            is_default: boolean;
+          }>;
+        }>; 
         message?: string 
       }>(
         url,
         { signal: newAbortController.signal }
       );
       
-      if (response.success && response.data?.data) {
-        console.log('API Response:', response.data.data); // Debug log
+      if (response.success && response.data) {
+        console.log('API Response:', response.data); // Debug log
         
-        const transformedProducts: ProductOption[] = response.data.data.map(product => {
+        const transformedProducts: ProductOption[] = response.data.map(product => {
           return {
             id: product.product_id,
             name: product.product_name,
-            unit_id: product.unit_id || 1, // Default unit ID if not provided
-            unit_name: product.unit_name || 'pcs', // Default unit name if not provided
+            unit_id: product.stock?.[0]?.unit_id || 1, // Default unit ID from first stock unit
+            unit_name: product.stock?.[0]?.unit_name || 'pcs', // Default unit name from first stock unit
             category_id: product.category_id || 0,
             manufacturer_id: product.manufacturer_id || 0
           };
