@@ -1,4 +1,14 @@
-import translations from '../lang/en.json'
+// Current language from environment
+const envLang = import.meta.env.VITE_DEFAULT_LANGUAGE
+
+// Dynamic import based on environment
+const translations = await (async () => {
+  try {
+    return (await import(`../lang/${envLang}.json`)).default
+  } catch (error) {
+    throw new Error(`Language file not found: "lang/${envLang}.json". Check if file exists in src/lang/`)
+  }
+})()
 
 /**
  * Translation function that safely accesses nested keys from the language JSON
@@ -7,56 +17,19 @@ import translations from '../lang/en.json'
  */
 export const t = (key: string): string => {
   try {
-    // Split the key by dots to access nested properties
     const keys = key.split('.')
-    
-    // Navigate through the translation object
     let result: any = translations
     
     for (const k of keys) {
       if (result && typeof result === 'object' && k in result) {
         result = result[k]
       } else {
-        // Key not found, return the original key
         return key
       }
     }
     
-    // If the final result is a string, return it; otherwise return the key
     return typeof result === 'string' ? result : key
-    
-  } catch (error) {
-    // In case of any error, return the original key
-    console.warn(`Translation error for key "${key}":`, error)
+  } catch {
     return key
   }
 }
-
-/**
- * Get all available translations (useful for debugging)
- */
-export const getTranslations = () => translations
-
-/**
- * Check if a translation key exists
- * @param key - Dot-separated key to check
- * @returns true if the key exists, false otherwise
- */
-export const hasTranslation = (key: string): boolean => {
-  try {
-    const keys = key.split('.')
-    let result: any = translations
-    
-    for (const k of keys) {
-      if (result && typeof result === 'object' && k in result) {
-        result = result[k]
-      } else {
-        return false
-      }
-    }
-    
-    return typeof result === 'string'
-  } catch {
-    return false
-  }
-} 

@@ -88,8 +88,7 @@ export default function Breadcrumb({ items, className = '' }: BreadcrumbProps) {
                     'Detail';
           } else {
             // Try to find a matching breadcrumb translation
-            const breadcrumbKey = segment.charAt(0).toUpperCase() + segment.slice(1);
-            label = t(`breadcrumb.${breadcrumbKey}`) || segment;
+            label = t(`breadcrumb.${segment}`) || segment;
           }
           break;
       }
