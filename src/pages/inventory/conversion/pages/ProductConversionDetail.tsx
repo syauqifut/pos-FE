@@ -12,11 +12,12 @@ import { t } from '../../../../utils/i18n';
 import { ArrowLeft, Plus, Edit, Trash2 } from 'lucide-react';
 
 interface ConversionItem {
-  id: string;
+  id: number;
   unit: string;
   qty: number;
   price: number;
   type: 'purchase' | 'sale';
+  is_active: boolean;
 }
 
 export default function ProductConversionDetail() {
@@ -24,7 +25,7 @@ export default function ProductConversionDetail() {
   const navigate = useNavigate();
   const productId = parseInt(id || '0');
   
-  const { conversionDetail, conversionItems, priceHistory, loading, error, sortConversionItems, refreshConversionDetail } = useConversionDetail(productId);
+  const { conversionDetail, conversionItems, defaultUnits, priceHistory, loading, error, sortConversionItems, refreshConversionDetail } = useConversionDetail(productId);
   const { deleteConversion, loading: deleteLoading } = useConversionForm();
   const [sortConfig, setSortConfig] = useState<SortConfig | undefined>();
 
@@ -57,7 +58,7 @@ export default function ProductConversionDetail() {
       e.stopPropagation();
     }
     if (window.confirm(t('inventory.conversion.confirmDeleteConversion'))) {
-      const success = await deleteConversion(parseInt(conversion.id));
+      const success = await deleteConversion(conversion.id);
       if (success) {
         await refreshConversionDetail();
       }
@@ -92,14 +93,8 @@ export default function ProductConversionDetail() {
       )
     },
     {
-      header: t('inventory.conversion.fromUnit'),
-      key: 'from_unit',
-      align: 'left',
-      sortable: true
-    },
-    {
-      header: t('inventory.conversion.toUnit'),
-      key: 'to_unit',
+      header: t('inventory.conversion.unit'),
+      key: 'unit',
       align: 'left',
       sortable: true
     },
@@ -173,13 +168,8 @@ export default function ProductConversionDetail() {
       )
     },
     {
-      header: t('inventory.conversion.fromUnit'),
-      key: 'from_unit',
-      align: 'left'
-    },
-    {
-      header: t('inventory.conversion.toUnit'),
-      key: 'to_unit',
+      header: t('inventory.conversion.unit'),
+      key: 'unit',
       align: 'left'
     },
     {
@@ -224,9 +214,6 @@ export default function ProductConversionDetail() {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           {t('inventory.conversion.productDetailTitle')}
         </h1>
-        <p className="text-gray-600 mb-4">
-          {t('inventory.conversion.productDetailDescription')}
-        </p>
         <Button variant="outline" onClick={handleBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t('common.back')}
@@ -241,11 +228,6 @@ export default function ProductConversionDetail() {
 
       {/* Basic Information */}
       <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {t('inventory.conversion.basicInfo')}
-          </h2>
-        </div>
         <div className="p-3">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             <div>
@@ -278,6 +260,7 @@ export default function ProductConversionDetail() {
         </div>
       </div>
 
+
       {/* Conversion List */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b border-gray-200">
@@ -286,9 +269,6 @@ export default function ProductConversionDetail() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {t('inventory.conversion.conversionList')}
               </h2>
-              <p className="text-gray-600 mt-1">
-                {t('inventory.conversion.conversionListDescription')}
-              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -324,9 +304,6 @@ export default function ProductConversionDetail() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {t('inventory.conversion.priceHistory')}
               </h2>
-              <p className="text-gray-600 mt-1">
-                {t('inventory.conversion.priceHistoryDescription')}
-              </p>
             </div>
           </div>
         </div>

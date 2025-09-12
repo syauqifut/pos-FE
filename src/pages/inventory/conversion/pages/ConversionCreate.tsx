@@ -8,8 +8,8 @@ export default function ConversionCreate() {
 
   if (!parsedProductId || isNaN(parsedProductId)) {
     return (
-      <div className="p-6">
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="p-3">
+        <div className="bg-white rounded-lg shadow p-3">
           <div className="text-center">
             <h1 className="text-xl font-semibold text-gray-900 mb-2">
               Invalid Product ID

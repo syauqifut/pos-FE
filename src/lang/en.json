@@ -24,7 +24,10 @@
     "view": "View",
     "home": "Home",
     "select": "Select",
-    "noUnitsAvailable": "No units available"
+    "noUnitsAvailable": "No units available",
+    "scrollToLoadMore": "Scroll to load more",
+    "noMoreData": "No more data to load",
+    "loadMore": "Load More"
   },
   "breadcrumb": {
     "dashboard": "Dashboard",
@@ -548,6 +551,9 @@
       "salesPrice": "Sales Price",
       "salesQty": "Sales Qty",
       "salesUnitName": "Sales Unit Name",
+      "conversion1": "Purchase Unit",
+      "conversion2": "Sale Unit (Default)",
+      "conversion3": "Sale Unit (Additional)",
       "refresh": "Refresh",
       "category": "Category",
       "manufacturer": "Manufacturer",

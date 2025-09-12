@@ -137,19 +137,10 @@ export default function ConversionDetail() {
             
             <div>
               <dt className="text-sm font-medium text-gray-500 mb-1">
-                {t('inventory.conversion.fromUnit')}
+                {t('inventory.conversion.unit')}
               </dt>
               <dd className="text-sm font-medium text-gray-900">
-                {conversion.from_unit_name || '-'}
-              </dd>
-            </div>
-
-            <div>
-              <dt className="text-sm font-medium text-gray-500 mb-1">
-                {t('inventory.conversion.toUnit')}
-              </dt>
-              <dd className="text-sm font-medium text-gray-900">
-                {conversion.to_unit_name || '-'}
+                {conversion.unit_name || '-'}
               </dd>
             </div>
 
@@ -158,7 +149,7 @@ export default function ConversionDetail() {
                 {t('inventory.conversion.qty')}
               </dt>
               <dd className="text-sm font-medium text-gray-900">
-                {parseFloat(conversion.to_unit_qty).toLocaleString()}
+                {parseFloat(conversion.unit_qty).toLocaleString()}
               </dd>
             </div>
 
@@ -167,7 +158,7 @@ export default function ConversionDetail() {
                 {t('inventory.conversion.price')}
               </dt>
               <dd className="text-sm font-medium text-gray-900">
-                {formatCurrency(parseFloat(conversion.to_unit_price))}
+                {formatCurrency(parseFloat(conversion.unit_price))}
               </dd>
             </div>
 

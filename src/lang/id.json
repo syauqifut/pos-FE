@@ -24,7 +24,10 @@
     "view": "Lihat",
     "home": "Beranda",
     "select": "Pilih",
-    "noUnitsAvailable": "Tidak ada unit tersedia"
+    "noUnitsAvailable": "Tidak ada unit tersedia",
+    "scrollToLoadMore": "Scroll untuk memuat lebih banyak",
+    "noMoreData": "Tidak ada data lagi untuk dimuat",
+    "loadMore": "Muat Lebih Banyak"
   },
   "breadcrumb": {
     "dashboard": "Dashboard",
@@ -548,6 +551,9 @@
       "salesPrice": "Harga Penjualan",
       "salesQty": "Qty Penjualan",
       "salesUnitName": "Nama Unit Penjualan",
+      "conversion1": "Unit Pembelian",
+      "conversion2": "Unit Penjualan (Default)",
+      "conversion3": "Unit Penjualan (Tambahan)",
       "refresh": "Refresh",
       "category": "Kategori",
       "manufacturer": "Produsen",

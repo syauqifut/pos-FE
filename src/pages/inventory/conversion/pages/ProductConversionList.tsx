@@ -1,17 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table } from '../../../../components/ui/Table/Table';
 import { TableColumn, SortConfig } from '../../../../types/table';
+import Button from '../../../../components/ui/Button/Button';
 import Alert from '../../../../components/ui/Alert/Alert';
 import Search from '../../../../components/ui/Search/Search';
 import { useConversion, UnitConversion } from '../features/useConversion';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import { t } from '../../../../utils/i18n';
 
 export default function ProductConversionList() {
   const navigate = useNavigate();
-  const { conversions, loading, error, refreshConversions, searchConversions, sortConversions } = useConversion();
+  const { conversions, loading, loadingMore, error, hasMore, refreshConversions, searchConversions, sortConversions, loadMore } = useConversion();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig | undefined>();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('ProductConversionList render - conversions count:', conversions.length, 'hasMore:', hasMore, 'loading:', loading, 'loadingMore:', loadingMore);
+  }, [conversions.length, hasMore, loading, loadingMore]);
 
   // Handle search immediately
   const handleSearch = async (value: string) => {
@@ -25,11 +33,35 @@ export default function ProductConversionList() {
     await searchConversions('');
   };
 
+  // Handle refresh
+  const handleRefresh = async () => {
+    await refreshConversions();
+  };
+
   // Handle sort
   const handleSort = async (newSortConfig: SortConfig) => {
     setSortConfig(newSortConfig);
     await sortConversions(newSortConfig.key, newSortConfig.direction);
   };
+
+  // Lazy loading with scroll detection - using the same pattern as transaction list
+  const handleScroll = useCallback(async (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget
+    
+    // Check if scrolled near bottom (within 150px) - increased threshold for better detection
+    if (scrollHeight - scrollTop <= clientHeight + 150 && hasMore && !loadingMore && !loading) {
+      console.log('Scroll triggered load more!', { 
+        scrollTop, 
+        scrollHeight, 
+        clientHeight, 
+        threshold: scrollHeight - scrollTop - clientHeight,
+        hasMore,
+        loadingMore,
+        loading
+      })
+      await loadMore()
+    }
+  }, [hasMore, loadingMore, loading, loadMore])
 
   const handleViewDetail = (conversion: UnitConversion) => {
     navigate(`/inventory/conversion/${conversion.id}`);
@@ -42,6 +74,11 @@ export default function ProductConversionList() {
       currency: 'IDR',
       minimumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Helper function to format conversion unit
+  const formatConversionUnit = (unit: any) => {
+    return `${unit.unit_qty} ${unit.unit_name} (${formatCurrency(unit.unit_price)})`;
   };
 
   const columns: TableColumn<UnitConversion>[] = [
@@ -59,50 +96,43 @@ export default function ProductConversionList() {
       sortable: true
     },
     {
-      header: t('inventory.conversion.purchasePrice'),
-      key: 'purchase_unit_price',
-      align: 'right',
-      sortable: true,
-      render: (value: any) => (
-        <span className="font-medium text-gray-900">
-          {value ? formatCurrency(value) : null}
-        </span>
-      )
-    },
-    {
-      header: t('inventory.conversion.purchaseQty'),
-      key: 'purchase_unit_qty',
-      align: 'right',
-      sortable: true
-    },
-    {
-      header: t('inventory.conversion.purchaseUnitName'),
-      key: 'purchase_unit_name',
+      header: t('inventory.conversion.conversion1'),
+      key: 'conversion1',
       align: 'left',
-      sortable: true
+      render: (_: any, conversion: UnitConversion) => {
+        const purchaseUnit = conversion.conversions?.find(c => c.type === 'purchase' && c.is_default);
+        return purchaseUnit ? (
+          <span className="font-medium text-blue-900">
+            {formatConversionUnit(purchaseUnit)}
+          </span>
+        ) : '-';
+      }
     },
     {
-      header: t('inventory.conversion.salesPrice'),
-      key: 'sale_unit_price',
-      align: 'right',
-      sortable: true,
-      render: (value: any) => (
-        <span className="font-medium text-gray-900">
-          {value ? formatCurrency(value) : null}
-        </span>
-      )
-    },
-    {
-      header: t('inventory.conversion.salesQty'),
-      key: 'sale_unit_qty',
-      align: 'right',
-      sortable: true
-    },
-    {
-      header: t('inventory.conversion.salesUnitName'),
-      key: 'sale_unit_name',
+      header: t('inventory.conversion.conversion2'),
+      key: 'conversion2',
       align: 'left',
-      sortable: true
+      render: (_: any, conversion: UnitConversion) => {
+        const saleUnit = conversion.conversions?.find(c => c.type === 'sale' && c.is_default);
+        return saleUnit ? (
+          <span className="font-medium text-green-900">
+            {formatConversionUnit(saleUnit)}
+          </span>
+        ) : '-';
+      }
+    },
+    {
+      header: t('inventory.conversion.conversion3'),
+      key: 'conversion3',
+      align: 'left',
+      render: (_: any, conversion: UnitConversion) => {
+        const additionalUnit = conversion.conversions?.find(c => c.type === 'sale' && !c.is_default);
+        return additionalUnit ? (
+          <span className="font-medium text-gray-900">
+            {formatConversionUnit(additionalUnit)}
+          </span>
+        ) : '-';
+      }
     },
   ];
 
@@ -119,8 +149,8 @@ export default function ProductConversionList() {
       )}
 
       <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
             <div className="flex-1 min-w-0">
               <Search
                 placeholder={t('inventory.conversion.searchPlaceholder')}
@@ -130,10 +160,25 @@ export default function ProductConversionList() {
                 className="w-full sm:w-80"
               />
             </div>
+            <div className="flex gap-1.5">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {t('inventory.conversion.refresh')}
+              </Button>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          className="overflow-auto max-h-[600px]"
+          onScroll={handleScroll}
+        >
           <Table
             columns={columns}
             data={conversions}
@@ -144,6 +189,23 @@ export default function ProductConversionList() {
             onSort={handleSort}
             onRowClick={handleViewDetail}
           />
+          
+          {/* Loading More Indicator */}
+          {loadingMore && (
+            <div className="p-4 text-center text-gray-500">
+              <div className="inline-flex items-center">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <span className="text-sm">{t('common.loading')}</span>
+              </div>
+            </div>
+          )}
+          
+          {/* End of Results Indicator */}
+          {!hasMore && conversions.length > 0 && !loading && (
+            <div className="p-4 text-center text-gray-400 text-sm">
+              {t('common.noMoreData')}
+            </div>
+          )}
         </div>
       </div>
     </div>

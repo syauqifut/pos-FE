@@ -27,13 +27,11 @@ export default function ConversionEdit() {
 
   const [formData, setFormData] = useState<ConversionFormData>({
     product_id: productId,
+    unit_id: null,
+    unit_qty: 1,
+    unit_price: 0,
     type: 'purchase',
-    from_unit_id: null,
-    to_unit_id: null,
-    to_unit_qty: 1,
-    to_unit_price: 0,
-    is_default_purchase: false,
-    is_default_sale: false
+    is_default: false
   });
   const [errors, setErrors] = useState<ConversionFormErrors>({});
 
@@ -42,13 +40,11 @@ export default function ConversionEdit() {
     if (conversion) {
       setFormData({
         product_id: productId,
+        unit_id: conversion.unit_id,
+        unit_qty: parseFloat(conversion.unit_qty),
+        unit_price: parseFloat(conversion.unit_price),
         type: conversion.type,
-        from_unit_id: conversion.from_unit_id,
-        to_unit_id: conversion.to_unit_id,
-        to_unit_qty: parseFloat(conversion.to_unit_qty),
-        to_unit_price: parseFloat(conversion.to_unit_price),
-        is_default_purchase: conversion.type === 'purchase' ? conversion.is_default : false,
-        is_default_sale: conversion.type === 'sale' ? conversion.is_default : false
+        is_default: conversion.is_default
       });
     }
   }, [conversion, productId]);
@@ -60,20 +56,16 @@ export default function ConversionEdit() {
       newErrors.type = t('inventory.conversion.typeRequired');
     }
 
-    if (!formData.from_unit_id) {
-      newErrors.from_unit_id = t('inventory.conversion.fromUnitRequired');
+    if (!formData.unit_id) {
+      newErrors.unit_id = t('inventory.conversion.unitRequired');
     }
 
-    if (!formData.to_unit_id) {
-      newErrors.to_unit_id = t('inventory.conversion.toUnitRequired');
+    if (formData.unit_qty <= 0) {
+      newErrors.unit_qty = t('inventory.conversion.unitQtyRequired');
     }
 
-    if (formData.to_unit_qty <= 0) {
-      newErrors.to_unit_qty = t('inventory.conversion.multiplierRequired');
-    }
-
-    if (formData.to_unit_price < 0) {
-      newErrors.to_unit_price = t('inventory.conversion.priceRequired');
+    if (formData.unit_price < 0) {
+      newErrors.unit_price = t('inventory.conversion.unitPriceRequired');
     }
 
     setErrors(newErrors);
@@ -103,13 +95,8 @@ export default function ConversionEdit() {
     }
 
     try {
-      // Ensure only the correct default field is set based on type
+      // Use the form data as is
       const submissionData = { ...formData };
-      if (submissionData.type === 'purchase') {
-        submissionData.is_default_sale = false;
-      } else {
-        submissionData.is_default_purchase = false;
-      }
 
       const result = await updateConversion(parseInt(conversionId), submissionData);
       if (result) {
@@ -141,7 +128,7 @@ export default function ConversionEdit() {
 
   if (conversionLoading) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <div className="flex justify-center items-center py-12">
           <Loader size="lg" text={t('common.loading')} />
         </div>
@@ -151,7 +138,7 @@ export default function ConversionEdit() {
 
   if (conversionError) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <Alert variant="error" className="mb-4">
           {conversionError}
         </Alert>
@@ -165,7 +152,7 @@ export default function ConversionEdit() {
 
   if (!conversion) {
     return (
-      <div className="p-6">
+      <div className="p-3">
         <Alert variant="error" className="mb-4">
           {t('inventory.conversion.notFound')}
         </Alert>
@@ -178,7 +165,7 @@ export default function ConversionEdit() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-4">
           <div>
@@ -189,7 +176,7 @@ export default function ConversionEdit() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
+      <div className="bg-white rounded-lg shadow p-3 max-w-2xl">
         <div>
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center space-x-4">
@@ -223,42 +210,32 @@ export default function ConversionEdit() {
             />
           </div>
 
-          {/* From Unit */}
+          {/* Unit */}
           <div>
             <Select
-              label={t('inventory.conversion.fromUnit')}
-              value={unitOptions.find(u => u.id === formData.from_unit_id) || null}
-              onChange={(option) => handleInputChange('from_unit_id', option?.id || null)}
+              label={t('inventory.conversion.unit')}
+              value={unitOptions.find(u => u.id === formData.unit_id) || null}
+              onChange={(option) => handleInputChange('unit_id', option?.id || null)}
               options={unitOptions}
-              placeholder={t('inventory.conversion.selectFromUnit')}
-              error={errors.from_unit_id}
+              placeholder={t('inventory.conversion.selectUnit')}
+              error={errors.unit_id}
               required
               disabled={isLoading}
             />
           </div>
 
-          {/* To Unit */}
-          <div>
-            <Select
-              label={t('inventory.conversion.toUnit')}
-              value={unitOptions.find(u => u.id === formData.to_unit_id) || null}
-              onChange={(option) => handleInputChange('to_unit_id', option?.id || null)}
-              options={unitOptions}
-              placeholder={t('inventory.conversion.selectToUnit')}
-              error={errors.to_unit_id}
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* To Unit Quantity */}
+          {/* Unit Quantity */}
           <div>
             <Input
               type="number"
-              label={t('inventory.conversion.toUnitQty')}
-              value={formData.to_unit_qty.toString()}
-              onChange={(e) => handleInputChange('to_unit_qty', parseFloat(e.target.value) || 0)}
-              error={errors.to_unit_qty}
+              label={t('inventory.conversion.unitQty')}
+              value={formData.unit_qty.toString()}
+              onChange={(e) => {
+                const value = e.target.value;
+                const parsedValue = value === '' ? 0 : parseFloat(value);
+                handleInputChange('unit_qty', isNaN(parsedValue) ? 0 : parsedValue);
+              }}
+              error={errors.unit_qty}
               placeholder="1.0"
               required
               disabled={isLoading}
@@ -267,40 +244,34 @@ export default function ConversionEdit() {
             />
           </div>
 
-          {/* To Unit Price */}
+          {/* Unit Price */}
           <div>
             <Input
               type="number"
-              label={t('inventory.conversion.toUnitPrice')}
-              value={formData.to_unit_price.toString()}
-              onChange={(e) => handleInputChange('to_unit_price', parseFloat(e.target.value) || 0)}
-              error={errors.to_unit_price}
+              label={t('inventory.conversion.unitPrice')}
+              value={formData.unit_price.toString()}
+              onChange={(e) => {
+                const value = e.target.value;
+                const parsedValue = value === '' ? 0 : parseFloat(value);
+                handleInputChange('unit_price', isNaN(parsedValue) ? 0 : parsedValue);
+              }}
+              error={errors.unit_price}
               placeholder="0"
               required
               disabled={isLoading}
               min="0"
-              step="1000"
+              step="1"
             />
           </div>
 
           {/* Default Radio */}
           <div>
             <Radio
-              name={`is_default_${formData.type}`}
-              value={
-                formData.type === 'purchase' 
-                  ? (formData.is_default_purchase ? 'true' : 'false')
-                  : (formData.is_default_sale ? 'true' : 'false')
-              }
+              name="is_default"
+              value={formData.is_default ? 'true' : 'false'}
               onChange={(value) => {
                 const isDefault = value === 'true';
-                if (formData.type === 'purchase') {
-                  handleInputChange('is_default_purchase', isDefault);
-                  handleInputChange('is_default_sale', false);
-                } else {
-                  handleInputChange('is_default_sale', isDefault);
-                  handleInputChange('is_default_purchase', false);
-                }
+                handleInputChange('is_default', isDefault);
               }}
               options={[
                 { value: 'true', label: t('inventory.conversion.setAsDefault') },

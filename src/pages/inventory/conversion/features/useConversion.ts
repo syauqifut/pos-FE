@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { apiGet, apiPost, apiPut, apiDelete } from '../../../../utils/apiClient';
 import { t } from '../../../../utils/i18n';
 
+export interface ConversionUnit {
+  unit_name: string;
+  unit_qty: number;
+  unit_price: number;
+  type: 'purchase' | 'sale';
+  is_default: boolean;
+}
+
 export interface UnitConversion {
-  id: string;
-  product_code: string;
+  id: number;
   product_name: string;
-  purchase_unit: string;
-  purchase_price: number;
-  sales_unit: string;
-  sales_price: number;
-  conversion_rate: number;
-  created_at: string;
-  updated_at: string;
+  product_barcode: string | null;
+  conversions: ConversionUnit[];
 }
 
 export interface ConversionDetail {
@@ -35,22 +37,23 @@ export interface ConversionDetail {
 }
 
 export interface ConversionItem {
-  id: string;
+  id: number;
   unit: string;
   qty: number;
   price: number;
   type: 'purchase' | 'sale';
-  from_unit?: string;
-  to_unit?: string;
-  from_unit_id?: number;
-  to_unit_id?: number;
-  to_unit_qty?: number;
-  to_unit_price?: number;
-  is_default_purchase?: boolean;
-  is_default_sale?: boolean;
-  product_id?: number;
-  created_at?: string;
-  updated_at?: string;
+  is_active: boolean;
+}
+
+export interface DefaultUnit {
+  unit: string;
+  qty: number;
+  price: number;
+}
+
+export interface DefaultUnits {
+  purchase: DefaultUnit;
+  sale: DefaultUnit;
 }
 
 export interface PriceHistoryItem {
@@ -71,15 +74,19 @@ export interface PriceHistory {
 interface UseConversionReturn {
   conversions: UnitConversion[];
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
+  hasMore: boolean;
   refreshConversions: () => Promise<void>;
   searchConversions: (searchTerm: string) => Promise<void>;
   sortConversions: (sortKey: string, sortDirection: 'asc' | 'desc') => Promise<void>;
+  loadMore: () => Promise<void>;
 }
 
 interface UseConversionDetailReturn {
   conversionDetail: ConversionDetail | null;
   conversionItems: ConversionItem[];
+  defaultUnits: DefaultUnits | null;
   priceHistory: PriceHistory[];
   loading: boolean;
   error: string | null;
@@ -90,12 +97,15 @@ interface UseConversionDetailReturn {
 export function useConversion(): UseConversionReturn {
   const [conversions, setConversions] = useState<UnitConversion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [_currentSearch, setCurrentSearch] = useState('');
   const [currentSort, setCurrentSort] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchConversions = async (searchTerm: string = '', sortConfig: { key: string; direction: 'asc' | 'desc' } | null = null) => {
+  const fetchConversions = async (searchTerm: string = '', sortConfig: { key: string; direction: 'asc' | 'desc' } | null = null, page: number = 1, append: boolean = false) => {
     // Cancel previous request if it exists
     if (abortController) {
       abortController.abort();
@@ -106,7 +116,11 @@ export function useConversion(): UseConversionReturn {
     setAbortController(newAbortController);
     
     try {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       // Build query parameters
@@ -118,32 +132,79 @@ export function useConversion(): UseConversionReturn {
       
       if (sortConfig) {
         let sortKey = sortConfig.key;
-        if (sortKey === 'product_code') {
-          sortKey = 'code';
-        } else if (sortKey === 'product_name') {
-          sortKey = 'name';
-        } else if (sortKey === 'purchase_price') {
-          sortKey = 'purchase_price';
-        } else if (sortKey === 'sales_price') {
-          sortKey = 'sales_price';
+        if (sortKey === 'product_name') {
+          sortKey = 'product_name';
+        } else if (sortKey === 'purchase_unit_price') {
+          sortKey = 'purchase_unit_price';
+        } else if (sortKey === 'purchase_unit_qty') {
+          sortKey = 'purchase_unit_qty';
+        } else if (sortKey === 'purchase_unit_name') {
+          sortKey = 'purchase_unit_name';
+        } else if (sortKey === 'sale_unit_price') {
+          sortKey = 'sale_unit_price';
+        } else if (sortKey === 'sale_unit_qty') {
+          sortKey = 'sale_unit_qty';
+        } else if (sortKey === 'sale_unit_name') {
+          sortKey = 'sale_unit_name';
         }
         params.append('sort_by', sortKey);
         params.append('sort_order', sortConfig.direction);
       }
       
+      // Add pagination parameters
+      params.append('page', page.toString());
+      params.append('limit', '10'); // Load 10 items per page
+      
       try {
         const queryString = params.toString();
         const url = `/api/inventory/conversion${queryString ? `?${queryString}` : ''}`;
       
-        const response = await apiGet<{ success: boolean; data: UnitConversion[]; message?: string }>(
+        const response = await apiGet<{ 
+          success: boolean; 
+          data: UnitConversion[]; 
+          pagination: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+          };
+          message?: string 
+        }>(
           url,
           { signal: newAbortController.signal }
         );
         
-        setConversions(response.data || []);
+        console.log('API Response:', {
+          success: response.success,
+          dataLength: response.data?.length,
+          pagination: response.pagination,
+          hasPagination: !!response.pagination
+        });
+        
+        if (append) {
+          setConversions(prev => [...prev, ...(response.data || [])]);
+          setCurrentPage(page); // Update current page when appending
+        } else {
+          setConversions(response.data || []);
+          setCurrentPage(page);
+        }
+        
+        if (response.pagination) {
+          console.log('Pagination data:', response.pagination);
+          const currentPage = response.pagination.page;
+          const totalPages = response.pagination.totalPages;
+          
+          setHasMore(currentPage < totalPages);
+          console.log('Pagination processed - currentPage:', currentPage, 'totalPages:', totalPages, 'hasMore:', currentPage < totalPages);
+        } else {
+          // Fallback: if no pagination data, check if we got a full page
+          const gotFullPage = response.data && response.data.length === 10;
+          console.log('No pagination data, using fallback logic - gotFullPage:', gotFullPage, 'dataLength:', response.data?.length);
+          setHasMore(gotFullPage);
+        }
       } catch (err: any) {
         const message = err?.message || err || 'Failed to fetch conversion data'
-        console.error('Error fetching conversions:', message);
+        console.error('coba error:', message);
         setError(message);
       }
     } catch (err) {
@@ -154,7 +215,11 @@ export function useConversion(): UseConversionReturn {
       setError('Failed to fetch conversion data');
       console.error('Error fetching conversions:', err);
     } finally {
-      setLoading(false);
+      if (append) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
       // Clear abort controller if it's still the current one
       if (abortController === newAbortController) {
         setAbortController(null);
@@ -165,22 +230,66 @@ export function useConversion(): UseConversionReturn {
   const refreshConversions = async () => {
     setCurrentSearch('');
     setCurrentSort(null);
-    await fetchConversions('', null);
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchConversions('', null, 1, false);
   };
 
   const searchConversions = async (searchTerm: string) => {
     setCurrentSearch(searchTerm);
-    await fetchConversions(searchTerm, currentSort);
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchConversions(searchTerm, currentSort, 1, false);
   };
 
   const sortConversions = async (sortKey: string, sortDirection: 'asc' | 'desc') => {
     const newSortConfig = { key: sortKey, direction: sortDirection };
     setCurrentSort(newSortConfig);
-    await fetchConversions(_currentSearch, newSortConfig);
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchConversions(_currentSearch, newSortConfig, 1, false);
+  };
+
+  const loadMore = async () => {
+    console.log('loadMore called - hasMore:', hasMore, 'loadingMore:', loadingMore, 'currentPage:', currentPage);
+    if (!hasMore || loadingMore) {
+      console.log('Cannot load more:', { hasMore, loadingMore });
+      return;
+    }
+    
+    const nextPage = currentPage + 1;
+    console.log('Loading page:', nextPage);
+    
+    // Set loading state immediately to prevent multiple calls
+    setLoadingMore(true);
+    
+    try {
+      // Don't update currentPage here, just fetch with append
+      await fetchConversions(_currentSearch, currentSort, nextPage, true);
+    } catch (error) {
+      console.error('Error in loadMore:', error);
+      // Reset loading state on error
+      setLoadingMore(false);
+    }
   };
 
   useEffect(() => {
-    fetchConversions();
+    // Initial load - fetch first 3 pages to show more than 10 items initially
+    const initialLoad = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch first 3 pages sequentially
+        await fetchConversions('', null, 1, false);
+        await fetchConversions('', null, 2, true);
+        await fetchConversions('', null, 3, true);
+      } catch (error) {
+        console.error('Error in initial load:', error);
+      }
+    };
+    
+    initialLoad();
     
     // Cleanup function to abort any pending requests
     return () => {
@@ -193,16 +302,20 @@ export function useConversion(): UseConversionReturn {
   return {
     conversions,
     loading,
+    loadingMore,
     error,
+    hasMore,
     refreshConversions,
     searchConversions,
-    sortConversions
+    sortConversions,
+    loadMore
   };
 }
 
 export function useConversionDetail(productId: number): UseConversionDetailReturn {
   const [conversionDetail, setConversionDetail] = useState<ConversionDetail | null>(null);
   const [conversionItems, setConversionItems] = useState<ConversionItem[]>([]);
+  const [defaultUnits, setDefaultUnits] = useState<DefaultUnits | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -240,6 +353,7 @@ export function useConversionDetail(productId: number): UseConversionDetailRetur
           data: { 
             product: ConversionDetail; 
             conversions: ConversionItem[];
+            default_unit: DefaultUnits;
             price_history: PriceHistory[]
           }; 
           message?: string 
@@ -251,6 +365,7 @@ export function useConversionDetail(productId: number): UseConversionDetailRetur
         if (response.data) {
           setConversionDetail(response.data.product);
           setConversionItems(response.data.conversions || []);
+          setDefaultUnits(response.data.default_unit || null);
           setPriceHistory(response.data.price_history || []);
         }
       } catch (err: any) {
@@ -301,6 +416,7 @@ export function useConversionDetail(productId: number): UseConversionDetailRetur
   return {
     conversionDetail,
     conversionItems,
+    defaultUnits,
     priceHistory,
     loading,
     error,
@@ -312,21 +428,18 @@ export function useConversionDetail(productId: number): UseConversionDetailRetur
 // Conversion form interfaces
 export interface ConversionFormData {
   product_id: number;
+  unit_id: number | null;
+  unit_qty: number;
+  unit_price: number;
   type: 'purchase' | 'sale';
-  from_unit_id: number | null;
-  to_unit_id: number | null;
-  to_unit_qty: number;
-  to_unit_price: number;
-  is_default_purchase: boolean | null;
-  is_default_sale: boolean | null;
+  is_default: boolean;
 }
 
 export interface ConversionFormErrors {
   type?: string;
-  from_unit_id?: string;
-  to_unit_id?: string;
-  to_unit_qty?: string;
-  to_unit_price?: string;
+  unit_id?: string;
+  unit_qty?: string;
+  unit_price?: string;
 }
 
 // Hook for fetching existing conversions by type
@@ -464,12 +577,10 @@ export function useConversionForm(): UseConversionFormReturn {
 // Individual conversion detail interface (different from ConversionItem)
 export interface IndividualConversion {
   id: number;
-  from_unit_id: number;
-  to_unit_id: number;
-  from_unit_name: string;
-  to_unit_name: string;
-  to_unit_qty: string;
-  to_unit_price: string;
+  unit_id: number;
+  unit_name: string;
+  unit_qty: string;
+  unit_price: string;
   type: 'purchase' | 'sale';
   is_default: boolean;
 }
