@@ -1,10 +1,7 @@
 import {
-  LayoutDashboard,
   ShoppingCart,
   Package,
-  BarChart3,
   Settings,
-  Users,
   UserCheck,
   Package2,
   Tags,
@@ -21,28 +18,10 @@ import { config } from '../utils/config'
 const generateMenuData = (): MenuItem[] => {
   const setupChildren: MenuItem[] = [
     {
-      id: 'setup-user-label',
-      name: t('sidebar.setupUser'),
-      icon: Users,
-      isLabel: true
-    },
-    {
       id: 'setup-user-list',
       name: t('sidebar.setupUserList'),
       path: '/setup/user/list',
       icon: UserCheck
-    },
-    {
-      id: 'setup-product-label',
-      name: t('sidebar.setupProduct'),
-      icon: Package2,
-      isLabel: true
-    },
-    {
-      id: 'setup-product',
-      name: t('sidebar.setupProduct'),
-      path: '/setup/product',
-      icon: Package
     },
     {
       id: 'setup-product-category',
@@ -68,12 +47,6 @@ const generateMenuData = (): MenuItem[] => {
   if (config.USE_ANDROID_PRINTER) {
     setupChildren.push(
       {
-        id: 'setup-device-label',
-        name: t('sidebar.setupDevice'),
-        icon: Printer,
-        isLabel: true
-      },
-      {
         id: 'setup-device-printer',
         name: t('sidebar.setupDevicePrinter'),
         path: '/setup/device/printer',
@@ -84,68 +57,46 @@ const generateMenuData = (): MenuItem[] => {
 
   return [
     {
-      id: 'dashboard',
-      name: t('sidebar.dashboard'),
-      path: '/dashboard',
-      icon: LayoutDashboard
+      id: 'list',
+      name: t('sidebar.transactionList'),
+      icon: List,
+      path: '/transaction/list',
     },
     {
-      id: 'reports',
-      name: t('sidebar.reports'),
-      path: '/reports',
-      icon: BarChart3
-    },
-    {
-      id: 'transaction',
-      name: t('sidebar.transaction'),
+      id: 'purchase',
+      name: t('sidebar.transactionPurchase'),
       icon: ShoppingCart,
-      isExpandable: true,
-      children: [
-        {
-          id: 'list',
-          name: t('sidebar.transactionList'),
-          icon: List,
-          path: '/transaction/list',
-        },
-        {
-          id: 'purchase',
-          name: t('sidebar.transactionPurchase'),
-          icon: ShoppingCart,
-          path: '/transaction/purchase',
-        },
-        {
-          id: 'adjustment',
-          name: t('sidebar.transactionAdjustment'),
-          icon: ShoppingCart,
-          path: '/transaction/adjustment',
-        },
-        {
-          id: 'sale',
-          name: t('sidebar.transactionSale'),
-          icon: ShoppingCart,
-          path: '/transaction/sale',
-        },
-      ]
+      path: '/transaction/purchase',
     },
     {
-      id: 'inventory',
-      name: t('sidebar.inventory'),
-      icon: Package,
-      isExpandable: true,
-      children: [
-        {
-          id: 'stock',
-          name: t('sidebar.stock'),
-          icon: Package2,
-          path: '/inventory/stock',
-        },
-        {
-          id: 'conversion',
-          name: t('sidebar.conversion'),
-          icon: Package2,
-          path: '/inventory/conversion',
-        },
-      ]
+      id: 'adjustment',
+      name: t('sidebar.transactionAdjustment'),
+      icon: ShoppingCart,
+      path: '/transaction/adjustment',
+    },
+    {
+      id: 'sale',
+      name: t('sidebar.transactionSale'),
+      icon: ShoppingCart,
+      path: '/transaction/sale',
+    },
+    {
+      id: 'stock',
+      name: t('sidebar.stock'),
+      icon: Package2,
+      path: '/inventory/stock',
+    },
+    {
+      id: 'conversion',
+      name: t('sidebar.conversion'),
+      icon: Package2,
+      path: '/inventory/conversion',
+    },
+    {
+      id: 'setup-product',
+      name: t('sidebar.setupProduct'),
+      path: '/setup/product',
+      icon: Package
     },
     {
       id: 'setup',
